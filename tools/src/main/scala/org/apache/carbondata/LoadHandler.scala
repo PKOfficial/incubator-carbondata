@@ -4,8 +4,7 @@ import org.apache.carbondata.common.logging.{LogService, LogServiceFactory}
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
-case class CommandLineArguments(inputPath: String, fileHeaders: Option[List[String]] = None, delimiter: String = ",", quoteCharacter: String = "\"",
-                                badRecordAction: String = "IGNORE")
+case class CommandLineArguments(inputPath: String, fileHeaders: Option[List[String]] = None, delimiter: String = ",", quoteCharacter: String = "\"", badRecordAction: String = "IGNORE")
 
 trait LoadHandler {
 

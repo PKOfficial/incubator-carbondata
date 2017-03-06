@@ -17,7 +17,6 @@ trait ProcessCaller {
       throw InvalidParameterException("Invalid Parameter Exception")
     } else {
       val (dataFrame, arguments) = loadHandler.getDataFrameAndArguments(args)
-
       cardinalityProcessor.getCardinalityMatrix(dataFrame, arguments)
     }
   }

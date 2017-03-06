@@ -22,26 +22,35 @@ import org.apache.carbondata.core.writer.ThriftWriter
 import org.apache.carbondata.format.SchemaEvolutionEntry
 
 
-/**
- * Created by knoldus on 28/2/17.
- */
 trait CarbonTableUtil {
 
   val globalDictionaryUtil: GlobalDictionaryUtil
 
+  /**
+   * This method creates dictionary for the input dataframe
+   * @param cardinalityMatrix
+   * @param dataFrame
+   */
   def createDictionary(cardinalityMatrix: List[CardinalityMatrix],
       dataFrame: DataFrame): Unit = {
     val (carbonTable, absoluteTableIdentifier) = createCarbonTableMeta(cardinalityMatrix, dataFrame)
     globalDictionaryUtil.writeDictionary(carbonTable, cardinalityMatrix, absoluteTableIdentifier)
   }
 
-  def createCarbonTableMeta(cardinalityMatrix: List[CardinalityMatrix],
+
+  /**
+   * This method creates the schema file for the input data file
+   * @param cardinalityMatrix
+   * @param dataFrame
+   * @return
+   */
+  private def createCarbonTableMeta(cardinalityMatrix: List[CardinalityMatrix],
       dataFrame: DataFrame): (CarbonTable, AbsoluteTableIdentifier) = {
     val tableInfo: TableInfo = new TableInfo()
     val tableSchema: TableSchema = new TableSchema()
     val absoluteTableIdentifier: AbsoluteTableIdentifier = new AbsoluteTableIdentifier(
       "./target/store/T1",
-      new CarbonTableIdentifier("Default_DB", "Default_TB", UUID.randomUUID().toString()))
+      new CarbonTableIdentifier("", "", UUID.randomUUID().toString))
     val columnSchemas = getColumnSchemas(cardinalityMatrix)
     tableSchema.setListOfColumns(columnSchemas)
     val schemaEvol: SchemaEvolution = new SchemaEvolution()
@@ -54,10 +63,10 @@ trait CarbonTableUtil {
     val thriftTableInfo = schemaConverter
       .fromWrapperToExternalTableInfo(tableInfo,
         tableInfo.getDatabaseName,
-        tableInfo.getFactTable().getTableName)
-    val schemaEvolutionEntry = new SchemaEvolutionEntry(tableInfo.getLastUpdatedTime())
-    val schemaEvolutionEntries = thriftTableInfo.getFact_table().getSchema_evolution()
-      .getSchema_evolution_history().add(schemaEvolutionEntry)
+        tableInfo.getFactTable.getTableName)
+    val schemaEvolutionEntry = new SchemaEvolutionEntry(tableInfo.getLastUpdatedTime)
+    thriftTableInfo.getFact_table.getSchema_evolution
+      .getSchema_evolution_history.add(schemaEvolutionEntry)
     val fileType = FileFactory.getFileType(schemaMetadataPath)
     if (!FileFactory.isFileExist(schemaMetadataPath, fileType)) {
       FileFactory.mkdirs(schemaMetadataPath, fileType)
@@ -67,16 +76,25 @@ trait CarbonTableUtil {
     thriftWriter.write(thriftTableInfo)
     thriftWriter.close()
     (CarbonMetadata.getInstance()
-      .getCarbonTable(tableInfo.getTableUniqueName()), absoluteTableIdentifier)
+      .getCarbonTable(tableInfo.getTableUniqueName), absoluteTableIdentifier)
   }
 
-  def setTableSchemaDetails(tableSchema: TableSchema,
+  /**
+   *
+   * @param tableSchema
+   * @param schemaEvol
+   * @param tableInfo
+   * @param absoluteTableIdentifier
+   * @return
+   */
+  private def setTableSchemaDetails(tableSchema: TableSchema,
       schemaEvol: SchemaEvolution,
       tableInfo: TableInfo,
       absoluteTableIdentifier: AbsoluteTableIdentifier): (String, String) = {
+    val storePath = "./target/store/T1"
     tableInfo.setStorePath("./target/store/T1")
-    tableInfo.setDatabaseName("Default_DB")
-    tableSchema.setTableName("Default_TB")
+    tableInfo.setDatabaseName("")
+    tableSchema.setTableName("")
     tableSchema.setSchemaEvalution(schemaEvol)
     tableSchema.setTableId(UUID.randomUUID().toString)
     tableInfo.setTableUniqueName(
@@ -85,17 +103,28 @@ trait CarbonTableUtil {
     tableInfo.setLastUpdatedTime(System.currentTimeMillis())
     tableInfo.setFactTable(tableSchema)
     tableInfo.setAggregateTableList(List.empty[TableSchema].asJava)
-    val carbonTablePath = CarbonStorePath
-      .getCarbonTablePath(absoluteTableIdentifier.getStorePath,
-        absoluteTableIdentifier.getCarbonTableIdentifier)
-    val schemaFilePath = carbonTablePath.getSchemaFilePath()
+
+    val carbonTablePath = new CarbonTablePath(absoluteTableIdentifier.getCarbonTableIdentifier, storePath)
+
+
+
+    val schemaFilePath = carbonTablePath.getSchemaFilePath
+
+
     val schemaMetadataPath = CarbonTablePath.getFolderContainingFile(schemaFilePath)
+
+
     tableInfo.setMetaDataFilepath(schemaMetadataPath)
     CarbonMetadata.getInstance().loadTableMetadata(tableInfo)
     (schemaMetadataPath, schemaFilePath)
   }
 
-  def getColumnSchemas(cardinalityMatrix: List[CardinalityMatrix]): List[ColumnSchema] = {
+  /**
+   *
+   * @param cardinalityMatrix
+   * @return
+   */
+  private def getColumnSchemas(cardinalityMatrix: List[CardinalityMatrix]): List[ColumnSchema] = {
 
     val encoding = List(Encoding.DICTIONARY).asJava
     var columnGroupId = -1
@@ -107,7 +136,7 @@ trait CarbonTableUtil {
       columnSchema.setEncodingList(encoding)
       columnSchema.setColumnUniqueId(element.columnName)
       columnSchema
-        .setDimensionColumn(checkDimensionColumn(columnSchema.getDataType, element.cardinality))
+        .setDimensionColumn(isDimensionColumn(columnSchema.getDataType, element.cardinality))
       // TODO: assign column group id to all columns
       columnGroupId += 1
       columnSchema.setColumnGroup(columnGroupId)
@@ -117,7 +146,12 @@ trait CarbonTableUtil {
 
   import org.apache.carbondata.core.metadata.datatype.{DataType => CarbonDataType}
 
-  def parseDataType(dataType: DataType): CarbonDataType = {
+  /**
+   * This method returns the CarbonData datatype for corresponding Spark datatype
+   * @param dataType
+   * @return
+   */
+  private def parseDataType(dataType: DataType): CarbonDataType = {
     dataType match {
       case StringType => CarbonDataType.STRING
       case FloatType => CarbonDataType.FLOAT
@@ -134,7 +168,13 @@ trait CarbonTableUtil {
     }
   }
 
-  def checkDimensionColumn(carbonDataType: CarbonDataType, cardinality: Double): Boolean = {
+  /**
+   * This method checks whether the column should be considered as dimension column based on its cardinality value
+   * @param carbonDataType
+   * @param cardinality
+   * @return
+   */
+  private def isDimensionColumn(carbonDataType: CarbonDataType, cardinality: Double): Boolean = {
     val cardinalityThreshold = 0.8
     //TODO: Columns for which dictionary will be created are considered as dimension columns
     if (cardinality > cardinalityThreshold) {

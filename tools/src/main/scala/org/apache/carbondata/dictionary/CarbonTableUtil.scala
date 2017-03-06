@@ -112,8 +112,6 @@ trait CarbonTableUtil {
 
 
     val schemaMetadataPath = CarbonTablePath.getFolderContainingFile(schemaFilePath)
-
-
     tableInfo.setMetaDataFilepath(schemaMetadataPath)
     CarbonMetadata.getInstance().loadTableMetadata(tableInfo)
     (schemaMetadataPath, schemaFilePath)
@@ -136,7 +134,7 @@ trait CarbonTableUtil {
       columnSchema.setEncodingList(encoding)
       columnSchema.setColumnUniqueId(element.columnName)
       columnSchema
-        .setDimensionColumn(isDimensionColumn(columnSchema.getDataType, element.cardinality))
+        .setDimensionColumn(globalDictionaryUtil.isDictionaryColumn(element.cardinality))
       // TODO: assign column group id to all columns
       columnGroupId += 1
       columnSchema.setColumnGroup(columnGroupId)
@@ -168,21 +166,6 @@ trait CarbonTableUtil {
     }
   }
 
-  /**
-   * This method checks whether the column should be considered as dimension column based on its cardinality value
-   * @param carbonDataType
-   * @param cardinality
-   * @return
-   */
-  private def isDimensionColumn(carbonDataType: CarbonDataType, cardinality: Double): Boolean = {
-    val cardinalityThreshold = 0.8
-    //TODO: Columns for which dictionary will be created are considered as dimension columns
-    if (cardinality > cardinalityThreshold) {
-      false
-    } else {
-      true
-    }
-  }
 }
 
 object CarbonTableUtil extends CarbonTableUtil {

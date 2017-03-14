@@ -5,20 +5,32 @@ import org.apache.carbondata.common.logging.{LogService, LogServiceFactory}
 import org.apache.carbondata.dictionary.CarbonTableUtil
 import org.apache.carbondata.exception.InvalidParameterException
 
-trait ProcessCaller {
+trait DictionaryFileGeneration {
 
-  val loadHandler: LoadHandler
+  val dataReader: DataReader
   val cardinalityProcessor: CardinalityProcessor
   val carbonTableUtil: CarbonTableUtil
 
-  def startProcess(args: Array[String]): List[CardinalityMatrix] = {
+  /**
+   *
+   * @param args Command Line Arguments accepting "path_to_input_source, fileheader(optional),
+   *             delimiter(optional), quotecharacter(optional)"
+   *             ,badrecordaction(optional)
+   * @return
+   */
+  def startGeneration(args: Array[String]): List[CardinalityMatrix] = {
     val LOGGER: LogService = LogServiceFactory.getLogService(this.getClass.getName)
-    if (args.length > 5 || args.length < 1) {
+    if (args.length != 1) {
       LOGGER.error("Invalid input parameters.")
-      LOGGER.error("[Usage]: <Path> <File Header(Comma-separated)>[Optional] <Delimiter>[Optional] <Quote Character>[Optional] <Bad Record Action>[Optional]")
+      LOGGER
+        .error(
+          "[Usage]: \"inputpath=<Path>, fileheader=<File Header(Comma-separated)>[Optional], " +
+          "delimiter=<Delimiter>[Optional], quotecharacter=<Quote Character>[Optional], " +
+          "badrecordaction=<Bad Record Action>[Optional]\"")
+
       throw InvalidParameterException("Invalid Parameter Exception")
     } else {
-      val (dataFrame, arguments) = loadHandler.getDataFrameAndArguments(args)
+      val (dataFrame, arguments) = dataReader.getDataFrameAndArguments(args)
 
       cardinalityProcessor.getCardinalityMatrix(dataFrame, arguments)
       val cardinalityMatrix = cardinalityProcessor.getCardinalityMatrix(dataFrame, arguments)
@@ -30,8 +42,8 @@ trait ProcessCaller {
 
 }
 
-object ProcessCaller extends ProcessCaller {
-  val loadHandler: LoadHandler = LoadHandler
+object DictionaryFileGeneration extends DictionaryFileGeneration {
+  val dataReader: DataReader = DataReader
   val cardinalityProcessor: CardinalityProcessor = CardinalityProcessor
   val carbonTableUtil: CarbonTableUtil = CarbonTableUtil
 }

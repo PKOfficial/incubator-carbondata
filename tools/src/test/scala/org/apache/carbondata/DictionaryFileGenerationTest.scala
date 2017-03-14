@@ -1,38 +1,45 @@
 package org.apache.carbondata
 
-import org.apache.carbondata.cardinality.CardinalityProcessor
 import org.apache.spark.sql.DataFrame
 import org.mockito.Mockito._
+import org.scalatest.FunSuite
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{BeforeAndAfter, FunSuite}
 import org.apache.carbondata.dictionary.CarbonTableUtil
 
-class ProcessCallerTest extends FunSuite with MockitoSugar with ProcessCaller {
+import org.apache.carbondata.cardinality.CardinalityProcessor
+import org.apache.carbondata.utils.LoadProperties
+
+class DictionaryFileGenerationTest
+  extends FunSuite with MockitoSugar with DictionaryFileGeneration {
+
 
   import TestHelper.sparkSession.implicits._
 
   val uniqueNameList = List("Prabhat", "Sangeeta")
 
-  val dataFrames: DataFrame = TestHelper.sparkSession.sparkContext.parallelize(uniqueNameList).toDF("name")
+  val dataFrames: DataFrame = TestHelper.sparkSession.sparkContext.parallelize(uniqueNameList)
+    .toDF("name")
 
-  val loadHandler: LoadHandler = mock[LoadHandler]
+  val dataReader: DataReader = mock[DataReader]
   val cardinalityProcessor: CardinalityProcessor = mock[CardinalityProcessor]
   val carbonTableUtil: CarbonTableUtil = mock[CarbonTableUtil]
 
-  val commandLineArguments = CommandLineArguments("file_path")
-  val arguments = Array("filePath", "File Header", "Delimiter", "QuoteCharacter", "Bad Record Action")
+  val commandLineArguments = LoadProperties("file_path")
+  val arguments = Array("inputpath=file_path")
 
 
   test("Start Process with valid arguments") {
-    when(loadHandler.getDataFrameAndArguments(arguments)) thenReturn ((dataFrames, commandLineArguments))
+    when(dataReader.getDataFrameAndArguments(arguments)) thenReturn
+    ((dataFrames, commandLineArguments))
     when(cardinalityProcessor.getCardinalityMatrix(dataFrames, commandLineArguments)) thenReturn Nil
-    assert(startProcess(arguments) === Nil)
+    assert(startGeneration(arguments) === Nil)
   }
 
   test("Start Process without File Path") {
     intercept[org.apache.carbondata.exception.InvalidParameterException] {
       val arguments = Array.empty[String]
-      startProcess(arguments)
+      startGeneration(arguments)
     }
   }
 
@@ -40,7 +47,7 @@ class ProcessCallerTest extends FunSuite with MockitoSugar with ProcessCaller {
     intercept[org.apache.carbondata.exception.InvalidParameterException] {
       val arguments = Array("filePath", "File Header", "Delimiter",
         "QuoteCharacter", "Bad Record Action", "Extra Argument")
-      startProcess(arguments)
+      startGeneration(arguments)
     }
   }
 

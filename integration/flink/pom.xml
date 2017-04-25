@@ -12,7 +12,6 @@
 
   <artifactId>flink-carbondata</artifactId>
   <name>flink-carbondata</name>
-  <!--<packaging>flink-carbondata</packaging>-->
 
   <properties>
     <dev.path>${basedir}/../../dev</dev.path>

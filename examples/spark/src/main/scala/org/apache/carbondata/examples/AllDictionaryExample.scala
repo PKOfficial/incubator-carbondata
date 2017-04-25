@@ -19,49 +19,52 @@ package org.apache.carbondata.examples
 
 import org.apache.carbondata.core.constants.CarbonCommonConstants
 import org.apache.carbondata.core.util.CarbonProperties
-import org.apache.carbondata.examples.util.{AllDictionaryUtil, ExampleUtils}
+import org.apache.carbondata.examples.util.ExampleUtils
+import org.joda.time.{DateTime, DateTimeZone}
 
 object AllDictionaryExample {
 
   def main(args: Array[String]) {
     val cc = ExampleUtils.createCarbonContext("AllDictionaryExample")
-    val testData = ExampleUtils.currentPath + "/src/main/resources/data.csv"
-    val csvHeader = "ID,date,country,name,phonetype,serialname,salary"
-    val dictCol = "|date|country|name|phonetype|serialname|"
-    val allDictFile = ExampleUtils.currentPath + "/src/main/resources/data.dictionary"
+    val testData = ExampleUtils.currentPath + "/src/main/resources/100_UniqData.csv"
+    //    val csvHeader = "ID,date,country,name,phonetype,serialname,salary"
+    //    val dictCol = "|date|country|name|phonetype|serialname|"
+    //    val allDictFile = ExampleUtils.currentPath + "/src/main/resources/data.dictionary"
     // extract all dictionary files from source data
-    AllDictionaryUtil.extractDictionary(cc.sparkContext,
-      testData, allDictFile, csvHeader, dictCol)
+    //    AllDictionaryUtil.extractDictionary(cc.sparkContext, testData, allDictFile, csvHeader, dictCol)
     // Specify date format based on raw data
     CarbonProperties.getInstance()
       .addProperty(CarbonCommonConstants.CARBON_DATE_FORMAT, "yyyy/MM/dd")
 
-    cc.sql("DROP TABLE IF EXISTS t3")
+    cc.sql("DROP TABLE IF EXISTS uniqData")
 
-    cc.sql("""
-           CREATE TABLE IF NOT EXISTS t3
-           (ID Int, date Date, country String,
-           name String, phonetype String, serialname String, salary Int,floatField float)
-           STORED BY 'carbondata'
+    cc.sql(
+      """
+             CREATE TABLE uniqdata
+             (CUST_ID int,CUST_NAME String,ACTIVE_EMUI_VERSION string, DOB timestamp, DOJ timestamp, BIGINT_COLUMN1 bigint,BIGINT_COLUMN2 bigint,DECIMAL_COLUMN1 decimal(30,10), DECIMAL_COLUMN2 decimal(36,10),Double_COLUMN1 double, Double_COLUMN2 double,INTEGER_COLUMN1 int) STORED BY 'org.apache.carbondata.format' TBLPROPERTIES ("TABLE_BLOCKSIZE"= "256 MB")
+      """)
+
+    cc.sql(
+      s"""
+              LOAD DATA INPATH '$testData' into table uniqdata OPTIONS('DELIMITER'=',' , 'QUOTECHAR'='"','BAD_RECORDS_ACTION'='FORCE','FILEHEADER'='CUST_ID,CUST_NAME,ACTIVE_EMUI_VERSION,DOB,DOJ,BIGINT_COLUMN1,BIGINT_COLUMN2,DECIMAL_COLUMN1,DECIMAL_COLUMN2,Double_COLUMN1,Double_COLUMN2,INTEGER_COLUMN1')
            """)
 
-    cc.sql(s"""
-           LOAD DATA LOCAL INPATH '$testData' into table t3
-           options('ALL_DICTIONARY_PATH'='$allDictFile')
-           """)
-
-    cc.sql("""
-           SELECT * FROM t3
-           """).show()
-
-    cc.sql("""
+    val t1 = System.currentTimeMillis()
+    cc.sql(
+      """
+           SELECT * FROM uniqdata
+      """).show()
+    val t2 = System.currentTimeMillis()
+    val timeTaken = t2 - t1
+    println("Time taken : " + timeTaken)
+    /*cc.sql("""
            SELECT * FROM t3 where floatField=3.5
            """).show()
 
-    cc.sql("DROP TABLE IF EXISTS t3")
+    cc.sql("DROP TABLE IF EXISTS t3")*/
 
     // clean local dictionary files
-    AllDictionaryUtil.cleanDictionary(allDictFile)
+    //    AllDictionaryUtil.cleanDictionary(allDictFile)
   }
 
 }

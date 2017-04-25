@@ -123,7 +123,7 @@ public class StoreCreator {
 
     try {
 
-      String factFilePath = new File("../hadoop/src/test/resources/data.csv").getCanonicalPath();
+      String factFilePath = new File("/home/knoldus/Documents/incubator-carbondata/hadoop/src/test/resources/data.csv").getCanonicalPath();
       File storeDir = new File(absoluteTableIdentifier.getStorePath());
       CarbonUtil.deleteFoldersAndFiles(storeDir);
       CarbonProperties.getInstance().addProperty(CarbonCommonConstants.STORE_LOCATION_HDFS,

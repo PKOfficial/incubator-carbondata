@@ -4,12 +4,15 @@ import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.operators.DataSource;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.junit.Test;
+import java.util.logging.Logger;
+
 
 import java.io.File;
 import java.io.IOException;
 
 public class CarbonFlinkInputFormatBenchmarkTest {
 
+  private final static Logger LOGGER = Logger.getLogger(CarbonFlinkInputFormatBenchmarkTest.class.getName());
   String getRootPath() throws IOException {
     return new File(this.getClass().getResource("/").getPath() + "../../../..").getCanonicalPath();
   }
@@ -31,6 +34,6 @@ public class CarbonFlinkInputFormatBenchmarkTest {
     assert (rowCount == 100);
     long t2 = System.currentTimeMillis();
     long timeTaken = t2 - t1;
-    System.out.println("Time taken : " + timeTaken);
+    LOGGER.info("Time taken : " + timeTaken);
   }
 }

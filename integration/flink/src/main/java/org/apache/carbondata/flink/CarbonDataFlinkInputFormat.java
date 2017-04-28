@@ -1,5 +1,6 @@
 package org.apache.carbondata.flink;
 
+import org.apache.carbondata.flink.exception.HadoopFormatException;
 import org.apache.carbondata.hadoop.CarbonInputFormat;
 import org.apache.carbondata.hadoop.CarbonProjection;
 
@@ -7,6 +8,7 @@ import org.apache.flink.api.java.hadoop.mapreduce.HadoopInputFormat;
 import org.apache.flink.hadoopcompatibility.HadoopInputs;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.Job;
+
 
 import java.io.File;
 
@@ -31,7 +33,7 @@ public class CarbonDataFlinkInputFormat {
     return (columns.length == 0);
   }
 
-  public HadoopInputFormat getInputFormat() {
+  public HadoopInputFormat getInputFormat() throws HadoopFormatException {
     if (!isValidPath()) {
       throw new IllegalArgumentException("Invalid path to table.");
     } else if (isEmptyColumn()) {
@@ -47,10 +49,9 @@ public class CarbonDataFlinkInputFormat {
       try {
         return HadoopInputs
             .readHadoopFile(new CarbonInputFormat<Object[]>(), Void.class, Object[].class, path,
-                new Job(conf));
+                new Job(conf)) ;
       } catch (Exception e) {
-        System.out.println("Could not create hadoop-input-format " + e);
-        return null;
+        throw new HadoopFormatException("Could not create hadoop-input-format " + e);
       }
     }
 

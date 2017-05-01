@@ -15,7 +15,6 @@ public class CarbonDataFlinkInputFormatTest {
         return new File(this.getClass().getResource("/").getPath() + "../../../..").getCanonicalPath();
     }
 
-
     @Test
     public void getDataFromCarbon() throws Exception {
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
@@ -31,7 +30,6 @@ public class CarbonDataFlinkInputFormatTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void getDataFromInvalidPath() throws Exception {
-//        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         String[] columns = {"id", "name"};
         String path = "./flink/src/test/resources/store/default/t3";
         CarbonDataFlinkInputFormat carbondataFlinkInputFormat = new CarbonDataFlinkInputFormat(getRootPath() + path, columns, false);
@@ -41,12 +39,10 @@ public class CarbonDataFlinkInputFormatTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void getDataFromTableHavingInvalidColumns() throws Exception {
-//        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         String[] columns = {};
         String path = "/integration/flink/src/test/resources/store/default/t3";
         CarbonDataFlinkInputFormat carbondataFlinkInputFormat = new CarbonDataFlinkInputFormat(getRootPath() + path, columns, false);
 
         carbondataFlinkInputFormat.getInputFormat();
-
     }
 }

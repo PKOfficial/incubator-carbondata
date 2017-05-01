@@ -230,6 +230,7 @@ public class CarbonFactDataHandlerModel {
     List<ColumnSchema> wrapperColumnSchema = CarbonUtil
         .getColumnSchemaList(carbonTable.getDimensionByTableName(tableIdentifier.getTableName()),
             carbonTable.getMeasureByTableName(tableIdentifier.getTableName()));
+
     int[] colCardinality =
         CarbonUtil.getFormattedCardinality(dimLensWithComplex, wrapperColumnSchema);
     SegmentProperties segmentProperties =

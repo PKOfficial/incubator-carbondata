@@ -8,8 +8,11 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.logging.Logger;
 
 public class CarbonFlinkInputFormatBenchmarkTest {
+
+    private final static Logger LOGGER = Logger.getLogger(CarbonFlinkInputFormatBenchmarkTest.class.getName());
 
     String getRootPath() throws IOException {
         return new File(this.getClass().getResource("/").getPath() + "../../../..").getCanonicalPath();
@@ -28,9 +31,7 @@ public class CarbonFlinkInputFormatBenchmarkTest {
         assert (rowCount == 100);
         long t2 = System.currentTimeMillis();
         long timeTaken = t2 - t1;
-        System.out.println("Time taken : " + timeTaken);
-        //assert(timeTaken < 1500);
-
-
+        LOGGER.info("Time taken : " + timeTaken);
+        assert(timeTaken < 16000);
     }
 }

@@ -1,5 +1,6 @@
 package org.apache.carbondata.flink;
 
+import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.*;
 import org.apache.flink.api.java.operators.DataSource;
@@ -22,8 +23,7 @@ public class CarbonDataFlinkInputFormatTest {
         String path = "/integration/flink/src/test/resources/store/default/t3";
         CarbonDataFlinkInputFormat carbondataFlinkInputFormat = new CarbonDataFlinkInputFormat(getRootPath() + path, columns, false);
 
-        DataSource<Tuple2<Void, Object[]>> dataSource = env.createInput(carbondataFlinkInputFormat.getInputFormat());
-
+        DataSet<Tuple2<Void, Object[]>> dataSource = env.createInput(carbondataFlinkInputFormat.getInputFormat());
         int rowCount = dataSource.collect().size();
         assert (rowCount == 10);
     }

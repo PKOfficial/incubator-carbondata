@@ -91,7 +91,7 @@ public class CarbondataStoreCreator {
         }
     }
 
-    public void createCarbonStore(AbsoluteTableIdentifier absoluteTableIdentifier, String columnString, String[] columnNames, String[] columnTypes, String sourcePath) {
+    public void createCarbonStore(AbsoluteTableIdentifier absoluteTableIdentifier, String columnString, String[] columnNames, String[] columnTypes, String sourcePath, String[] dimensionColumns) {
         try {
             String factFilePath = sourcePath;
             File storeDir = new File(absoluteTableIdentifier.getStorePath());
@@ -99,14 +99,12 @@ public class CarbondataStoreCreator {
             CarbonProperties.getInstance().addProperty(CarbonCommonConstants.STORE_LOCATION_HDFS,
                     absoluteTableIdentifier.getStorePath());
 
-            CarbonTable table = createTable(absoluteTableIdentifier, columnNames, columnTypes);
+            CarbonTable table = createTable(absoluteTableIdentifier, columnNames, columnTypes, dimensionColumns);
             writeDictionary(factFilePath, table, absoluteTableIdentifier);
             CarbonDataLoadSchema schema = new CarbonDataLoadSchema(table);
             CarbonLoadModel loadModel = new CarbonLoadModel();
-            String partitionId = "0";
             loadModel.setCarbonDataLoadSchema(schema);
             loadModel.setDatabaseName(absoluteTableIdentifier.getCarbonTableIdentifier().getDatabaseName());
-            loadModel.setTableName(absoluteTableIdentifier.getCarbonTableIdentifier().getTableName());
             loadModel.setTableName(absoluteTableIdentifier.getCarbonTableIdentifier().getTableName());
             loadModel.setFactFilePath(factFilePath);
             loadModel.setLoadMetadataDetails(new ArrayList<LoadMetadataDetails>());
@@ -144,7 +142,16 @@ public class CarbondataStoreCreator {
 
     }
 
-    private CarbonTable createTable(AbsoluteTableIdentifier absoluteTableIdentifier, String[] columnNames, String[] columnTypes) throws IOException {
+    private boolean isDimensionColumn(String[] dimensionColumns, String column) {
+        boolean isDimension = false;
+        for (int iterator = 0; iterator < dimensionColumns.length; iterator++) {
+            if (dimensionColumns[iterator].equals(column))
+                isDimension = true;
+        }
+        return isDimension;
+    }
+
+    private CarbonTable createTable(AbsoluteTableIdentifier absoluteTableIdentifier, String[] columnNames, String[] columnTypes, String[] dimensionColumns) throws IOException {
         TableInfo tableInfo = new TableInfo();
         tableInfo.setStorePath(absoluteTableIdentifier.getStorePath());
         tableInfo.setDatabaseName(absoluteTableIdentifier.getCarbonTableIdentifier().getDatabaseName());
@@ -154,34 +161,28 @@ public class CarbondataStoreCreator {
         ArrayList<Encoding> encodings = new ArrayList();
         encodings.add(Encoding.DICTIONARY);
 
+        ArrayList<Encoding> emptyEncodings = new ArrayList();
+
         int x = 0;
-        for (int i = 0; i < columnNames.length - 1; i++) {
+        for (int i = 0; i < columnNames.length; i++) {
             DataType type = convertType(columnTypes[i]);
             String colName = columnNames[i];
             ColumnSchema column = new ColumnSchema();
             column.setColumnName(colName);
             column.setColumnar(true);
             column.setDataType(type);
-            column.setEncodingList(encodings);
             column.setColumnUniqueId(UUID.randomUUID().toString());
-            column.setDimensionColumn(true);
+            if (isDimensionColumn(dimensionColumns, colName)) {
+                column.setDimensionColumn(true);
+                column.setEncodingList(encodings);
+            }
+            else {
+                column.setDimensionColumn(false);
+                column.setEncodingList(emptyEncodings);
+            }
             column.setColumnGroup(i + 1);
             columnSchemas.add(column);
-            x = i + 1;
         }
-
-        count++;
-        DataType type = convertType(columnTypes[x]);
-        String colName = columnNames[x];
-        ColumnSchema salary = new ColumnSchema();
-        salary.setColumnName(colName);
-        salary.setColumnar(true);
-        salary.setDataType(type);
-        salary.setEncodingList(new ArrayList<Encoding>());
-        salary.setColumnUniqueId(UUID.randomUUID().toString());
-        salary.setDimensionColumn(false);
-        salary.setColumnGroup(count);
-        columnSchemas.add(salary);
 
         tableSchema.setListOfColumns(columnSchemas);
         SchemaEvolution schemaEvol = new SchemaEvolution();
@@ -259,16 +260,12 @@ public class CarbondataStoreCreator {
             }
             writer.close();
             writer.commit();
-            org.apache.carbondata.core.cache.dictionary.Dictionary dict = (org.apache.carbondata.core.cache.dictionary.Dictionary) dictCache.get(
-                    new DictionaryColumnUniqueIdentifier(absoluteTableIdentifier.getCarbonTableIdentifier(),
-                            columnIdentifier, dims.get(i).getDataType()));
-            CarbonDictionarySortInfoPreparator preparator =
-                    new CarbonDictionarySortInfoPreparator();
+            org.apache.carbondata.core.cache.dictionary.Dictionary dict = (org.apache.carbondata.core.cache.dictionary.Dictionary) dictCache.get(new DictionaryColumnUniqueIdentifier(absoluteTableIdentifier.getCarbonTableIdentifier(),
+                    columnIdentifier, dims.get(i).getDataType()));
+            CarbonDictionarySortInfoPreparator preparator = new CarbonDictionarySortInfoPreparator();
             List<String> newDistinctValues = new ArrayList<String>();
-            CarbonDictionarySortInfo dictionarySortInfo =
-                    preparator.getDictionarySortInfo(newDistinctValues, dict, dims.get(i).getDataType());
-            CarbonDictionarySortIndexWriter carbonDictionaryWriter =
-                    new CarbonDictionarySortIndexWriterImpl(
+            CarbonDictionarySortInfo dictionarySortInfo = preparator.getDictionarySortInfo(newDistinctValues, dict, dims.get(i).getDataType());
+            CarbonDictionarySortIndexWriter carbonDictionaryWriter = new CarbonDictionarySortIndexWriterImpl(
                             absoluteTableIdentifier.getCarbonTableIdentifier(), columnIdentifier,
                             absoluteTableIdentifier.getStorePath());
             try {
@@ -298,8 +295,6 @@ public class CarbondataStoreCreator {
         CarbonProperties.getInstance().addProperty("high.cardinality.value", "100000");
         CarbonProperties.getInstance().addProperty("is.compressed.keyblock", "false");
         CarbonProperties.getInstance().addProperty("carbon.leaf.node.size", "120000");
-
-        String fileNamePrefix = "";
 
         String graphPath =
                 outPutLoc + File.separator + loadModel.getDatabaseName() + File.separator + tableName
@@ -341,8 +336,7 @@ public class CarbondataStoreCreator {
         writeLoadMetadata(loadModel.getCarbonDataLoadSchema(), loadModel.getTableName(), loadModel.getTableName(),
                 new ArrayList<LoadMetadataDetails>());
 
-        String segLocation =
-                storeLocation + "/" + databaseName + "/" + tableName + "/Fact/Part0/Segment_0";
+        String segLocation = storeLocation + "/" + databaseName + "/" + tableName + "/Fact/Part0/Segment_0";
         File file = new File(segLocation);
         File factFile = null;
         File[] folderList = file.listFiles();
@@ -366,7 +360,7 @@ public class CarbondataStoreCreator {
     }
 
     public void writeLoadMetadata(CarbonDataLoadSchema schema, String databaseName,
-                                         String tableName, List<LoadMetadataDetails> listOfLoadFolderDetails) throws IOException {
+                                  String tableName, List<LoadMetadataDetails> listOfLoadFolderDetails) throws IOException {
         LoadMetadataDetails loadMetadataDetails = new LoadMetadataDetails();
         loadMetadataDetails.setLoadEndTime(System.currentTimeMillis());
         loadMetadataDetails.setLoadStatus("SUCCESS");
@@ -385,11 +379,9 @@ public class CarbondataStoreCreator {
                 new AtomicFileOperationsImpl(dataLoadLocation, FileFactory.getFileType(dataLoadLocation));
 
         try {
-
             dataOutputStream = writeOperation.openForWrite(FileWriteOperation.OVERWRITE);
             brWriter = new BufferedWriter(new OutputStreamWriter(dataOutputStream,
                     Charset.forName(CarbonCommonConstants.DEFAULT_CHARSET)));
-
             String metadataInstance = gsonObjectToWrite.toJson(listOfLoadFolderDetails.toArray());
             brWriter.write(metadataInstance);
         } finally {
@@ -399,19 +391,15 @@ public class CarbondataStoreCreator {
                 }
             } catch (Exception e) {
                 throw e;
-
             }
             CarbonUtil.closeStreams(brWriter);
-
         }
         writeOperation.close();
-
     }
 
     public String readCurrentTime() {
         SimpleDateFormat sdf = new SimpleDateFormat(CarbonCommonConstants.CARBON_TIMESTAMP);
-        String date = null;
-        date = sdf.format(new Date());
+        String date = sdf.format(new Date());
         return date;
     }
 

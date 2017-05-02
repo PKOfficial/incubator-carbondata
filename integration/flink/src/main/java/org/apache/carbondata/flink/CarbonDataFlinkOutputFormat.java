@@ -17,6 +17,7 @@ public class CarbonDataFlinkOutputFormat extends RichOutputFormat<Tuple2<Void, O
 
     private String[] columnNames;
     private String[] columnTypes;
+    private String[] dimensionColumns;
     private String storePath;
     private String databaseName;
     private String tableName;
@@ -84,7 +85,7 @@ public class CarbonDataFlinkOutputFormat extends RichOutputFormat<Tuple2<Void, O
                 }
             }
             CarbondataStoreCreator carbondataStoreCreator = new CarbondataStoreCreator();
-            carbondataStoreCreator.createCarbonStore(absoluteTableIdentifier, columnString, columnNames, columnTypes, sourcePath);
+            carbondataStoreCreator.createCarbonStore(absoluteTableIdentifier, columnString, columnNames, columnTypes, sourcePath, dimensionColumns);
 
         }
     }
@@ -134,6 +135,11 @@ public class CarbonDataFlinkOutputFormat extends RichOutputFormat<Tuple2<Void, O
 
         public CarbonDataFlinkOutputFormat.CarbonDataOutputFormatBuilder setRecordCount(long recordCount) {
             this.format.recordCount = recordCount;
+            return this;
+        }
+
+        public CarbonDataFlinkOutputFormat.CarbonDataOutputFormatBuilder setDimensionColumns(String[] dimensionColumns) {
+            this.format.dimensionColumns = dimensionColumns;
             return this;
         }
 

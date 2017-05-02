@@ -29,10 +29,10 @@ public class CarbonDataFlinkOutputFormatTest extends TestCase {
 
         DataSet<Tuple2<Void, Object[]>> dataSource = env.createInput(carbondataFlinkInputFormat.getInputFormat());
         long recordCount = dataSource.count();
-        LOGGER.info("::::::::::::Record Count:::::::::::::::" + recordCount);
 
         String[] columnTypes = {"Int", "Date", "String", "String", "String", "String", "Long"};
         String[] columnHeaders = {"ID", "date", "country", "name", "phonetype", "serialname", "salary"};
+        String[] dimensioncolumns = {"date", "country", "name", "phonetype", "serialname"};
 
         CarbonDataFlinkOutputFormat.CarbonDataOutputFormatBuilder outputFormat =
                 CarbonDataFlinkOutputFormat.buildCarbonDataOutputFormat()
@@ -41,7 +41,8 @@ public class CarbonDataFlinkOutputFormatTest extends TestCase {
                 .setStorePath(getRootPath() + "/integration/flink/target/store")
                 .setDatabaseName("testdb")
                 .setTableName("testtable")
-                .setRecordCount(recordCount);
+                .setRecordCount(recordCount)
+                .setDimensionColumns(dimensioncolumns);
 
         dataSource.output(outputFormat.finish());
         env.execute();

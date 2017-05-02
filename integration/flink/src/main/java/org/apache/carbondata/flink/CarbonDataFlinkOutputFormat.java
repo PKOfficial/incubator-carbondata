@@ -11,7 +11,9 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.UUID;
+import java.util.logging.Logger;
 
 public class CarbonDataFlinkOutputFormat extends RichOutputFormat<Tuple2<Void, Object[]>> {
 
@@ -21,13 +23,32 @@ public class CarbonDataFlinkOutputFormat extends RichOutputFormat<Tuple2<Void, O
     private String storePath;
     private String databaseName;
     private String tableName;
-    private static int writeCount = 0;
     private long recordCount;
     private ArrayList<Tuple2<Void, Object[]>> records = new ArrayList<>();
+    private final static Logger LOGGER = Logger.getLogger(CarbonDataFlinkOutputFormat.class.getName());
+    public static int writeCount = 0;
 
     private String getSourcePath() throws IOException {
         String path = new File(this.getClass().getResource("/").getPath() + "../../../..").getCanonicalPath();
         return path + "/integration/flink/target/flink-records/record.csv";
+    }
+
+    private boolean isValidColumns() {
+        if (columnNames.length == columnTypes.length && dimensionColumns.length < columnNames.length)
+            return true;
+        else
+            return false;
+    }
+
+    private boolean isValidDimensions() {
+        boolean isValid = true;
+        for (int iterator = 0; iterator < columnTypes.length; iterator++) {
+            if (columnTypes[iterator].toLowerCase().equals("string") && !Arrays.asList(dimensionColumns).contains(columnNames[iterator])) {
+                    isValid = false;
+                    break;
+            }
+        }
+        return isValid;
     }
 
     @Override
@@ -41,52 +62,57 @@ public class CarbonDataFlinkOutputFormat extends RichOutputFormat<Tuple2<Void, O
         records.add(record);
         writeCount++;
 
-        if (writeCount == recordCount) {                       // recordCount+1 to include header
-            AbsoluteTableIdentifier absoluteTableIdentifier = new AbsoluteTableIdentifier(storePath, new CarbonTableIdentifier(databaseName, tableName, UUID.randomUUID().toString()));
+        if (writeCount == recordCount) {
+            if (isValidColumns() && isValidDimensions()) {
 
-            String sourcePath = getSourcePath();
-            File sourceFile = new File(sourcePath);
-            sourceFile.getParentFile().mkdirs();
-            sourceFile.createNewFile();
+                AbsoluteTableIdentifier absoluteTableIdentifier = new AbsoluteTableIdentifier(storePath, new CarbonTableIdentifier(databaseName, tableName, UUID.randomUUID().toString()));
 
-            BufferedWriter bufferedWriter = null;
-            FileWriter fileWriter = null;
-            String columnString = "";
+                String sourcePath = getSourcePath();
+                File sourceFile = new File(sourcePath);
+                sourceFile.getParentFile().mkdirs();
+                sourceFile.createNewFile();
 
-            try {
-                fileWriter = new FileWriter(sourcePath);
-                bufferedWriter = new BufferedWriter(fileWriter);
-                writeCount = 0;
+                BufferedWriter bufferedWriter = null;
+                FileWriter fileWriter = null;
+                String columnString = "";
 
-                for (int iterator = 0; iterator < columnNames.length; iterator++) {
-                    columnString += columnNames[iterator] + ",";
-                }
-                columnString = columnString.substring(0, columnString.length() - 1);
-                bufferedWriter.write(columnString + "\n");
-
-                System.out.println(columnNames.toString());
-                for (Tuple2<Void, Object[]> element : records) {
-                    writeCount++;
-                    String row = (element.toString().substring(7, element.toString().length() - 2)).replace(" ", "");
-                    bufferedWriter.write(row + "\n");
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
                 try {
-                    if (bufferedWriter != null) {
-                        bufferedWriter.close();
-                    }
-                    if (fileWriter != null) {
-                        fileWriter.close();
-                    }
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                }
-            }
-            CarbondataStoreCreator carbondataStoreCreator = new CarbondataStoreCreator();
-            carbondataStoreCreator.createCarbonStore(absoluteTableIdentifier, columnString, columnNames, columnTypes, sourcePath, dimensionColumns);
+                    fileWriter = new FileWriter(sourcePath);
+                    bufferedWriter = new BufferedWriter(fileWriter);
+                    writeCount = 0;
 
+                    for (int iterator = 0; iterator < columnNames.length; iterator++) {
+                        columnString += columnNames[iterator] + ",";
+                    }
+                    columnString = columnString.substring(0, columnString.length() - 1);
+                    bufferedWriter.write(columnString + "\n");
+
+                    System.out.println(columnNames.toString());
+                    for (Tuple2<Void, Object[]> element : records) {
+                        writeCount++;
+                        String row = (element.toString().substring(7, element.toString().length() - 2)).replace(" ", "");
+                        bufferedWriter.write(row + "\n");
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } finally {
+                    try {
+                        if (bufferedWriter != null) {
+                            bufferedWriter.close();
+                        }
+                        if (fileWriter != null) {
+                            fileWriter.close();
+                        }
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+                CarbondataStoreCreator carbondataStoreCreator = new CarbondataStoreCreator();
+                carbondataStoreCreator.createCarbonStore(absoluteTableIdentifier, columnString, columnNames, columnTypes, sourcePath, dimensionColumns);
+                LOGGER.info("\n\nTable Stored to carbon store successfully");
+            } else {
+                throw new IllegalArgumentException("Please provide correct column data");
+            }
         }
     }
 

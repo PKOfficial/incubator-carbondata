@@ -20,7 +20,7 @@ public class CarbonDataFlinkOutputFormat extends RichOutputFormat<Tuple2<Void, O
     private String storePath;
     private String databaseName;
     private String tableName;
-    private static int writeCount = 0;
+    public static long writeCount = 0;
     private long recordCount;
     private ArrayList<Tuple2<Void, Object[]>> records = new ArrayList<>();
 
@@ -55,7 +55,6 @@ public class CarbonDataFlinkOutputFormat extends RichOutputFormat<Tuple2<Void, O
             try {
                 fileWriter = new FileWriter(sourcePath);
                 bufferedWriter = new BufferedWriter(fileWriter);
-                writeCount = 0;
 
                 for (int iterator = 0; iterator < columnNames.length; iterator++) {
                     columnString += columnNames[iterator] + ",";
@@ -63,9 +62,7 @@ public class CarbonDataFlinkOutputFormat extends RichOutputFormat<Tuple2<Void, O
                 columnString = columnString.substring(0, columnString.length() - 1);
                 bufferedWriter.write(columnString + "\n");
 
-                System.out.println(columnNames.toString());
                 for (Tuple2<Void, Object[]> element : records) {
-                    writeCount++;
                     String row = (element.toString().substring(7, element.toString().length() - 2)).replace(" ", "");
                     bufferedWriter.write(row + "\n");
                 }
@@ -89,7 +86,7 @@ public class CarbonDataFlinkOutputFormat extends RichOutputFormat<Tuple2<Void, O
         }
     }
 
-    public static int getWriteCount() {
+    public static long getWriteCount() {
         return writeCount;
     }
 

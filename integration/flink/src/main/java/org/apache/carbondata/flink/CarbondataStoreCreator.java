@@ -402,6 +402,4 @@ public class CarbondataStoreCreator {
         String date = sdf.format(new Date());
         return date;
     }
-
-
 }

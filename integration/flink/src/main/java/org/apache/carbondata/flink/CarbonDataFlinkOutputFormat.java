@@ -23,10 +23,10 @@ public class CarbonDataFlinkOutputFormat extends RichOutputFormat<Tuple2<Void, O
     private String storePath;
     private String databaseName;
     private String tableName;
-    private long recordCount;
+    public static long writeCount = 0;
+    private long recordCount = 0;
     private ArrayList<Tuple2<Void, Object[]>> records = new ArrayList<>();
     private final static Logger LOGGER = Logger.getLogger(CarbonDataFlinkOutputFormat.class.getName());
-    public static int writeCount = 0;
 
     private String getSourcePath() throws IOException {
         String path = new File(this.getClass().getResource("/").getPath() + "../../../..").getCanonicalPath();
@@ -57,6 +57,12 @@ public class CarbonDataFlinkOutputFormat extends RichOutputFormat<Tuple2<Void, O
     @Override
     public void open(int taskNumber, int numTasks) throws IOException { }
 
+    /**
+     * This method is responsible for creating carbon table
+     * @param record
+     * @throws IOException
+     */
+
     @Override
     public void writeRecord(Tuple2<Void, Object[]> record) throws IOException {
         records.add(record);
@@ -79,7 +85,6 @@ public class CarbonDataFlinkOutputFormat extends RichOutputFormat<Tuple2<Void, O
                 try {
                     fileWriter = new FileWriter(sourcePath);
                     bufferedWriter = new BufferedWriter(fileWriter);
-                    writeCount = 0;
 
                     for (int iterator = 0; iterator < columnNames.length; iterator++) {
                         columnString += columnNames[iterator] + ",";
@@ -87,9 +92,7 @@ public class CarbonDataFlinkOutputFormat extends RichOutputFormat<Tuple2<Void, O
                     columnString = columnString.substring(0, columnString.length() - 1);
                     bufferedWriter.write(columnString + "\n");
 
-                    System.out.println(columnNames.toString());
                     for (Tuple2<Void, Object[]> element : records) {
-                        writeCount++;
                         String row = (element.toString().substring(7, element.toString().length() - 2)).replace(" ", "");
                         bufferedWriter.write(row + "\n");
                     }
@@ -116,7 +119,11 @@ public class CarbonDataFlinkOutputFormat extends RichOutputFormat<Tuple2<Void, O
         }
     }
 
-    public static int getWriteCount() {
+    /**
+     * This method returns the number of records written to carbondata table
+     * @return writeCount
+     */
+    public static long getWriteCount() {
         return writeCount;
     }
 
@@ -134,16 +141,31 @@ public class CarbonDataFlinkOutputFormat extends RichOutputFormat<Tuple2<Void, O
         public CarbonDataOutputFormatBuilder() {
         }
 
-        public CarbonDataFlinkOutputFormat.CarbonDataOutputFormatBuilder setColumns(String[] columns) {
+        /**
+         * This method set ColumnNames of the carbon table
+         * @param columns
+         * @return CarbonDataFlinkOutputFormat
+         */
+        public CarbonDataFlinkOutputFormat.CarbonDataOutputFormatBuilder setColumnNames(String[] columns) {
             this.format.columnNames = columns;
             return this;
         }
 
+        /**
+         * This method set ColumnTypes of the carbon table
+         * @param columnTypes
+         * @return CarbonDataFlinkOutputFormat
+         */
         public CarbonDataFlinkOutputFormat.CarbonDataOutputFormatBuilder setColumnTypes(String[] columnTypes) {
             this.format.columnTypes = columnTypes;
             return this;
         }
 
+        /**
+         * This method sets the store location for carbon table
+         * @param storePath : location where carbon table needs to be created
+         * @return CarbonDataFlinkOutputFormat
+         */
         public CarbonDataFlinkOutputFormat.CarbonDataOutputFormatBuilder setStorePath(String storePath) {
             this.format.storePath = storePath;
             return this;
@@ -159,17 +181,60 @@ public class CarbonDataFlinkOutputFormat extends RichOutputFormat<Tuple2<Void, O
             return this;
         }
 
+        /**
+         * This method is used to set the record count
+         * @param recordCount : Number of rows received from input format
+         * @return CarbonDataFlinkOutputFormat
+         */
         public CarbonDataFlinkOutputFormat.CarbonDataOutputFormatBuilder setRecordCount(long recordCount) {
             this.format.recordCount = recordCount;
             return this;
         }
 
+        /**
+         * This method set the dimension Columns
+         *             NOTE: All Strings must be part of dimension column
+         * @param dimensionColumns
+         * @return CarbonDataFlinkOutputFormat
+         */
         public CarbonDataFlinkOutputFormat.CarbonDataOutputFormatBuilder setDimensionColumns(String[] dimensionColumns) {
             this.format.dimensionColumns = dimensionColumns;
             return this;
         }
 
+        /**
+         * This method checks if all required inputs are provided or not
+         * @return CarbonDataFlinkOutputFormat
+         */
         public CarbonDataFlinkOutputFormat finish() {
+            if(format.databaseName == null){
+                throw new IllegalArgumentException("No database name supplied.");
+            }
+
+            if(format.tableName == null){
+                throw new IllegalArgumentException("No tablename supplied.");
+            }
+
+            if(format.storePath == null){
+                throw new IllegalArgumentException("No storePath supplied.");
+            }
+
+            if(format.columnNames == null){
+                throw new IllegalArgumentException("No column names supplied.");
+            }
+
+            if(format.columnTypes == null){
+                throw new IllegalArgumentException("No column Types supplied.");
+            }
+
+            if(format.dimensionColumns == null){
+                throw new IllegalArgumentException("No dictionary columns supplied.");
+            }
+
+            if(format.recordCount == 0){
+                throw new IllegalArgumentException("No recordCount supplied.");
+            }
+
             return this.format;
         }
     }

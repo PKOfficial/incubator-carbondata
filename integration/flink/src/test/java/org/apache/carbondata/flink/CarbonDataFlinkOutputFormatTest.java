@@ -1,10 +1,14 @@
 package org.apache.carbondata.flink;
 
+import org.apache.carbondata.flink.utils.UnzipUtility;
+import org.apache.commons.io.FileUtils;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.runtime.client.JobExecutionException;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
@@ -15,8 +19,18 @@ public class CarbonDataFlinkOutputFormatTest {
 
     private final static Logger LOGGER = Logger.getLogger(CarbonFlinkInputFormatBenchmarkTest.class.getName());
 
-    String getRootPath() throws IOException {
-        return new File(this.getClass().getResource("/").getPath() + "../../../..").getCanonicalPath();
+    static String getRootPath() throws IOException {
+        return new File(CarbonDataFlinkOutputFormatTest.class.getResource("/").getPath() + "../../../..").getCanonicalPath();
+    }
+
+    @BeforeClass
+    public static void defineStore() throws IOException {
+        String zipPath = getRootPath() + "/integration/flink/src/test/resources/store-input.zip";
+        String zipDestinationPath = getRootPath() + "/integration/flink/target";
+
+        UnzipUtility unzipUtility = new UnzipUtility();
+        unzipUtility.unzip(zipPath, zipDestinationPath);
+
     }
 
     @Before
@@ -26,9 +40,10 @@ public class CarbonDataFlinkOutputFormatTest {
 
     @Test
     public void testOutputFormatWithProjection() throws Exception {
+
         ExecutionEnvironment environment = ExecutionEnvironment.getExecutionEnvironment();
         String[] columns = {"ID", "Date", "country", "salary"};
-        String path = "/integration/flink/src/test/resources/store/testdb/testtable";
+        String path = "/integration/flink/target/store-input/testdb/testtable";
         CarbonDataFlinkInputFormat carbondataFlinkInputFormat = new CarbonDataFlinkInputFormat(getRootPath() + path, columns, false);
 
         DataSet<Tuple2<Void, Object[]>> dataSource = environment.createInput(carbondataFlinkInputFormat.getInputFormat());
@@ -59,7 +74,7 @@ public class CarbonDataFlinkOutputFormatTest {
     public void testOutputFormatForSelectAll() throws Exception {
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         String[] columns = {"ID", "date", "country", "name", "phonetype", "serialname", "salary"};
-        String path = "/integration/flink/src/test/resources/store/testdb/testtable";
+        String path = "/integration/flink/target/store-input/testdb/testtable";
         CarbonDataFlinkInputFormat carbondataFlinkInputFormat = new CarbonDataFlinkInputFormat(getRootPath() + path, columns, false);
 
         DataSet<Tuple2<Void, Object[]>> dataSource = env.createInput(carbondataFlinkInputFormat.getInputFormat());
@@ -91,7 +106,7 @@ public class CarbonDataFlinkOutputFormatTest {
 
         ExecutionEnvironment environment = ExecutionEnvironment.getExecutionEnvironment();
         String[] columns = {"SSN", "Address", "Contact_Number"};
-        String path = "/integration/flink/src/test/resources/store/testdb/testtable";
+        String path = "/integration/flink/target/store-input/testdb/testtable";
         CarbonDataFlinkInputFormat carbonDataFlinkInputFormat = new CarbonDataFlinkInputFormat(getRootPath() + path, columns, false);
 
         try {
@@ -127,7 +142,7 @@ public class CarbonDataFlinkOutputFormatTest {
 
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         String[] columns = {"ID", "date", "country", "name", "phonetype", "serialname", "salary"};
-        String path = "/integration/flink/src/test/resources/store/testdb/testtable";
+        String path = "/integration/flink/target/store-input/testdb/testtable";
         CarbonDataFlinkInputFormat carbondataFlinkInputFormat = new CarbonDataFlinkInputFormat(getRootPath() + path, columns, false);
 
         DataSet<Tuple2<Void, Object[]>> dataSource = env.createInput(carbondataFlinkInputFormat.getInputFormat());
@@ -163,7 +178,7 @@ public class CarbonDataFlinkOutputFormatTest {
 
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         String[] columns = {"ID", "date", "country", "name", "phonetype", "serialname", "salary"};
-        String path = "/integration/flink/src/test/resources/store/testdb/testtable";
+        String path = "/integration/flink/target/store-input/testdb/testtable";
         CarbonDataFlinkInputFormat carbondataFlinkInputFormat = new CarbonDataFlinkInputFormat(getRootPath() + path, columns, false);
 
         DataSet<Tuple2<Void, Object[]>> dataSource = env.createInput(carbondataFlinkInputFormat.getInputFormat());
@@ -199,7 +214,7 @@ public class CarbonDataFlinkOutputFormatTest {
 
         ExecutionEnvironment environment = ExecutionEnvironment.getExecutionEnvironment();
         String[] columns = {"ID", "Date", "country", "salary"};
-        String path = "/integration/flink/src/test/resources/store/testdb/testtable";
+        String path = "/integration/flink/target/store-input/testdb/testtable";
         CarbonDataFlinkInputFormat carbondataFlinkInputFormat = new CarbonDataFlinkInputFormat(getRootPath() + path, columns, false);
 
         DataSet<Tuple2<Void, Object[]>> dataSource = environment.createInput(carbondataFlinkInputFormat.getInputFormat());
@@ -235,7 +250,7 @@ public class CarbonDataFlinkOutputFormatTest {
     public void testOutputFormatWithoutDimensions() throws Exception {
         ExecutionEnvironment environment = ExecutionEnvironment.getExecutionEnvironment();
         String[] columns = {"ID", "Date", "country", "salary"};
-        String path = "/integration/flink/src/test/resources/store/testdb/testtable";
+        String path = "/integration/flink/target/store-input/testdb/testtable";
         CarbonDataFlinkInputFormat carbondataFlinkInputFormat = new CarbonDataFlinkInputFormat(getRootPath() + path, columns, false);
 
         DataSet<Tuple2<Void, Object[]>> dataSource = environment.createInput(carbondataFlinkInputFormat.getInputFormat());
@@ -266,7 +281,7 @@ public class CarbonDataFlinkOutputFormatTest {
     public void testOutputFormatWithoutStorepath() throws Exception {
         ExecutionEnvironment environment = ExecutionEnvironment.getExecutionEnvironment();
         String[] columns = {"ID", "Date", "country", "salary"};
-        String path = "/integration/flink/src/test/resources/store/testdb/testtable";
+        String path = "/integration/flink/target/store-input/testdb/testtable";
         CarbonDataFlinkInputFormat carbondataFlinkInputFormat = new CarbonDataFlinkInputFormat(getRootPath() + path, columns, false);
 
         DataSet<Tuple2<Void, Object[]>> dataSource = environment.createInput(carbondataFlinkInputFormat.getInputFormat());
@@ -297,7 +312,7 @@ public class CarbonDataFlinkOutputFormatTest {
     public void testOutputFormatWithoutDatabaseName() throws Exception {
         ExecutionEnvironment environment = ExecutionEnvironment.getExecutionEnvironment();
         String[] columns = {"ID", "Date", "country", "salary"};
-        String path = "/integration/flink/src/test/resources/store/testdb/testtable";
+        String path = "/integration/flink/target/store-input/testdb/testtable";
         CarbonDataFlinkInputFormat carbondataFlinkInputFormat = new CarbonDataFlinkInputFormat(getRootPath() + path, columns, false);
 
         DataSet<Tuple2<Void, Object[]>> dataSource = environment.createInput(carbondataFlinkInputFormat.getInputFormat());
@@ -328,7 +343,7 @@ public class CarbonDataFlinkOutputFormatTest {
     public void testOutputFormatWithoutTableName() throws Exception {
         ExecutionEnvironment environment = ExecutionEnvironment.getExecutionEnvironment();
         String[] columns = {"ID", "Date", "country", "salary"};
-        String path = "/integration/flink/src/test/resources/store/testdb/testtable";
+        String path = "/integration/flink/target/store-input/testdb/testtable";
         CarbonDataFlinkInputFormat carbondataFlinkInputFormat = new CarbonDataFlinkInputFormat(getRootPath() + path, columns, false);
 
         DataSet<Tuple2<Void, Object[]>> dataSource = environment.createInput(carbondataFlinkInputFormat.getInputFormat());
@@ -359,7 +374,7 @@ public class CarbonDataFlinkOutputFormatTest {
     public void testOutputFormatWithoutRecordCount() throws Exception {
         ExecutionEnvironment environment = ExecutionEnvironment.getExecutionEnvironment();
         String[] columns = {"ID", "Date", "country", "salary"};
-        String path = "/integration/flink/src/test/resources/store/testdb/testtable";
+        String path = "/integration/flink/target/store-input/testdb/testtable";
         CarbonDataFlinkInputFormat carbondataFlinkInputFormat = new CarbonDataFlinkInputFormat(getRootPath() + path, columns, false);
 
         DataSet<Tuple2<Void, Object[]>> dataSource = environment.createInput(carbondataFlinkInputFormat.getInputFormat());
@@ -390,7 +405,7 @@ public class CarbonDataFlinkOutputFormatTest {
     public void testOutputFormatWithoutColumnNames() throws Exception {
         ExecutionEnvironment environment = ExecutionEnvironment.getExecutionEnvironment();
         String[] columns = {"ID", "Date", "country", "salary"};
-        String path = "/integration/flink/src/test/resources/store/testdb/testtable";
+        String path = "/integration/flink/target/store-input/testdb/testtable";
         CarbonDataFlinkInputFormat carbondataFlinkInputFormat = new CarbonDataFlinkInputFormat(getRootPath() + path, columns, false);
 
         DataSet<Tuple2<Void, Object[]>> dataSource = environment.createInput(carbondataFlinkInputFormat.getInputFormat());
@@ -419,7 +434,7 @@ public class CarbonDataFlinkOutputFormatTest {
     public void testOutputFormatWithoutColumnTypes() throws Exception {
         ExecutionEnvironment environment = ExecutionEnvironment.getExecutionEnvironment();
         String[] columns = {"ID", "Date", "country", "salary"};
-        String path = "/integration/flink/src/test/resources/store/testdb/testtable";
+        String path = "/integration/flink/target/store-input/testdb/testtable";
         CarbonDataFlinkInputFormat carbondataFlinkInputFormat = new CarbonDataFlinkInputFormat(getRootPath() + path, columns, false);
 
         DataSet<Tuple2<Void, Object[]>> dataSource = environment.createInput(carbondataFlinkInputFormat.getInputFormat());
@@ -443,6 +458,11 @@ public class CarbonDataFlinkOutputFormatTest {
             LOGGER.info(ex.getMessage());
             assert true;
         }
+    }
+
+    @AfterClass
+    public static void removeStore() throws IOException {
+        FileUtils.deleteDirectory(new File(getRootPath() + "/integration/flink/target/store"));
     }
 
 }

@@ -57,7 +57,7 @@ public class CarbonDataFlinkInputFormat {
      */
     public HadoopInputFormat<Void, Object[]> getInputFormat() throws HadoopFormatException {
         if (!isValidPath()) {
-            throw new IllegalArgumentException("Invalid path to table.");
+            throw new IllegalArgumentException("Invalid path to table." + path);
         } else if (isEmptyColumn()) {
             throw new IllegalArgumentException("Invalid columns for projection.");
         } else {

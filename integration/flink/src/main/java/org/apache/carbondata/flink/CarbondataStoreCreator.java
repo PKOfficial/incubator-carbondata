@@ -116,18 +116,10 @@ public class CarbondataStoreCreator {
             loadModel.setDefaultDateFormat(CarbonProperties.getInstance().getProperty(
                     CarbonCommonConstants.CARBON_DATE_FORMAT,
                     CarbonCommonConstants.CARBON_DATE_DEFAULT_FORMAT));
-            loadModel
-                    .setSerializationNullFormat(
-                            TableOptionConstant.SERIALIZATION_NULL_FORMAT.getName() + "," + "\\N");
-            loadModel
-                    .setBadRecordsLoggerEnable(
-                            TableOptionConstant.BAD_RECORDS_LOGGER_ENABLE.getName() + "," + "false");
-            loadModel
-                    .setBadRecordsAction(
-                            TableOptionConstant.BAD_RECORDS_ACTION.getName() + "," + "FORCE");
-            loadModel
-                    .setIsEmptyDataBadRecord(
-                            DataLoadProcessorConstants.IS_EMPTY_DATA_BAD_RECORD + "," + "false");
+            loadModel.setSerializationNullFormat(TableOptionConstant.SERIALIZATION_NULL_FORMAT.getName() + "," + "\\N");
+            loadModel.setBadRecordsLoggerEnable(TableOptionConstant.BAD_RECORDS_LOGGER_ENABLE.getName() + "," + "false");
+            loadModel.setBadRecordsAction(TableOptionConstant.BAD_RECORDS_ACTION.getName() + "," + "FORCE");
+            loadModel.setIsEmptyDataBadRecord(DataLoadProcessorConstants.IS_EMPTY_DATA_BAD_RECORD + "," + "false");
             loadModel.setCsvHeader(columnString);
             loadModel.setCsvHeaderColumns(loadModel.getCsvHeader().split(","));
             loadModel.setTaskNo("0");

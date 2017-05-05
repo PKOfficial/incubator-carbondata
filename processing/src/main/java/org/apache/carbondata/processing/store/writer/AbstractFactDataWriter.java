@@ -72,9 +72,7 @@ import org.apache.carbondata.processing.store.writer.exception.CarbonDataWriterE
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.hadoop.io.IOUtils;
 
-public abstract class AbstractFactDataWriter<T> implements CarbonFactDataWriter<T>
-
-{
+public abstract class AbstractFactDataWriter<T> implements CarbonFactDataWriter<T> {
 
   private static final LogService LOGGER =
       LogServiceFactory.getLogService(AbstractFactDataWriter.class.getName());
@@ -458,6 +456,7 @@ public abstract class AbstractFactDataWriter<T> implements CarbonFactDataWriter<
       writer.writeThrift(blockIndex);
     }
     writer.close();
+    System.out.println("\n\n Written Index file successfully");
     // copy from temp to actual store location
     copyCarbonDataFileToCarbonStorePath(fileName);
   }
@@ -513,12 +512,15 @@ public abstract class AbstractFactDataWriter<T> implements CarbonFactDataWriter<
     try {
       CarbonFile localCarbonFile =
           FileFactory.getCarbonFile(localFileName, FileFactory.getFileType(localFileName));
+      System.out.println("\n\n local carbon file ::::::::: " + localCarbonFile);
       String carbonFilePath = dataWriterVo.getCarbonDataDirectoryPath() + localFileName
           .substring(localFileName.lastIndexOf(File.separator));
       copyLocalFileToCarbonStore(carbonFilePath, localFileName,
           CarbonCommonConstants.BYTEBUFFER_SIZE,
           getMaxOfBlockAndFileSize(fileSizeInBytes, localCarbonFile.getSize()));
-    } catch (IOException e) {
+    } catch (Exception e) {
+      System.out.println("\n\n\n Copying data from local to hdfs");
+      e.printStackTrace();
       throw new CarbonDataWriterException(
           "Problem while copying file from local store to carbon store");
     }
@@ -538,6 +540,7 @@ public abstract class AbstractFactDataWriter<T> implements CarbonFactDataWriter<
    */
   private void copyLocalFileToCarbonStore(String carbonStoreFilePath, String localFilePath,
       int bufferSize, long blockSize) throws IOException {
+    System.out.println("localPath: " + localFilePath + "::::::::::::::: carbonStoreFilePath :" + carbonStoreFilePath);
     DataOutputStream dataOutputStream = null;
     DataInputStream dataInputStream = null;
     try {

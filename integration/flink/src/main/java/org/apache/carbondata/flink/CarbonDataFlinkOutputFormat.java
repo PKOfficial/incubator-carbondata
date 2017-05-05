@@ -112,7 +112,6 @@ public class CarbonDataFlinkOutputFormat extends RichOutputFormat<Tuple2<Void, O
                 }
                 CarbondataStoreCreator carbondataStoreCreator = new CarbondataStoreCreator();
                 carbondataStoreCreator.createCarbonStore(absoluteTableIdentifier, columnString, columnNames, columnTypes, sourcePath, dimensionColumns);
-                LOGGER.info("\n\nTable Stored to carbon store successfully");
             } else {
                 throw new IllegalArgumentException("Please provide correct column data");
             }

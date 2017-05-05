@@ -538,6 +538,7 @@ public class CarbonFactDataWriterImplV3 extends AbstractFactDataWriter<short[]> 
    * @throws CarbonDataWriterException
    */
   public void closeWriter() throws CarbonDataWriterException {
+    System.out.println("\n\n Initiating copying of carbondata file and carbonindex file");
     if (dataWriterHolder.getNodeHolder().size() > 0) {
       writeDataToFile(fileChannel);
       writeBlockletInfoToFile(fileChannel, carbonDataFileTempPath);

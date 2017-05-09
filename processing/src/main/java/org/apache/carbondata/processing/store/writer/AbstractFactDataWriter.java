@@ -519,6 +519,7 @@ public abstract class AbstractFactDataWriter<T> implements CarbonFactDataWriter<
           CarbonCommonConstants.BYTEBUFFER_SIZE,
           getMaxOfBlockAndFileSize(fileSizeInBytes, localCarbonFile.getSize()));
     } catch (IOException e) {
+      e.printStackTrace();
       throw new CarbonDataWriterException(
           "Problem while copying file from local store to carbon store");
     }
@@ -543,13 +544,18 @@ public abstract class AbstractFactDataWriter<T> implements CarbonFactDataWriter<
     try {
       LOGGER.debug(
           "HDFS file block size for file: " + carbonStoreFilePath + " is " + blockSize + " (bytes");
+
       dataOutputStream = FileFactory
           .getDataOutputStream(carbonStoreFilePath, FileFactory.getFileType(carbonStoreFilePath),
               bufferSize, blockSize);
       dataInputStream = FileFactory
           .getDataInputStream(localFilePath, FileFactory.getFileType(localFilePath), bufferSize);
       IOUtils.copyBytes(dataInputStream, dataOutputStream, bufferSize);
-    } finally {
+    } catch (Exception ex) {
+      LOGGER.debug("Exception occured while copying from local to carbon store");
+      ex.printStackTrace();
+    }
+    finally {
       CarbonUtil.closeStream(dataInputStream);
       CarbonUtil.closeStream(dataOutputStream);
     }

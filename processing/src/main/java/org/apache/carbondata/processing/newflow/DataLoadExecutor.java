@@ -47,6 +47,7 @@ public class DataLoadExecutor {
       // 2. execute the step
       loadProcessorStep.execute();
     } catch (CarbonDataLoadingException e) {
+      e.printStackTrace();
       throw e;
     } catch (Exception e) {
       LOGGER.error(e, "Data Loading failed for table " + loadModel.getTableName());

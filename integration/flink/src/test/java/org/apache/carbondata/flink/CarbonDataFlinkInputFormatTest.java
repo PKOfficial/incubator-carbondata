@@ -4,13 +4,17 @@ import org.apache.carbondata.flink.utils.UnzipUtility;
 import org.apache.commons.io.FileUtils;
 import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.operators.DataSource;
 import org.apache.flink.api.java.tuple.Tuple2;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
+import scala.collection.TraversableOnce;
 
 public class CarbonDataFlinkInputFormatTest {
 
@@ -40,10 +44,11 @@ public class CarbonDataFlinkInputFormatTest {
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         String[] columns = {"id", "name"};
         String path = "/integration/flink/target/store-input/default/t3";
-        CarbonDataFlinkInputFormat carbondataFlinkInputFormat = new CarbonDataFlinkInputFormat(getRootPath() + path, columns, false);
+        CarbonDataFlinkInputFormat carbondataFlinkInputFormat = new CarbonDataFlinkInputFormat(getRootPath() + path, columns, true);
 
         DataSet<Tuple2<Void, Object[]>> dataSource = env.createInput(carbondataFlinkInputFormat.getInputFormat());
         int rowCount = dataSource.collect().size();
+        System.out.println("\n\nRecords Read: " + rowCount);
         assert (rowCount == 10);
     }
 

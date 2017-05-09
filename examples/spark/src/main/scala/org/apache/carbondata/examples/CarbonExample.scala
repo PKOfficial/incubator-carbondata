@@ -33,7 +33,7 @@ object CarbonExample {
 
     cc.sql("DROP TABLE IF EXISTS t3")
 
-    // Create table, 6 dimensions, 1 measure
+//     Create table, 6 dimensions, 1 measure
     cc.sql("""
            CREATE TABLE IF NOT EXISTS t3
            (ID Int, date Date, country String,
@@ -45,13 +45,9 @@ object CarbonExample {
     cc.sql(s"""
            LOAD DATA LOCAL INPATH '$testData' into table t3
            """)
-
     // Perform a query
     cc.sql("""
-           SELECT country, count(salary) AS amount
-           FROM t3
-           WHERE country IN ('china','france')
-           GROUP BY country
+           select * from t3
            """).show()
 
     // Drop table

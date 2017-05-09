@@ -30,7 +30,6 @@ public class CarbonDataFlinkOutputFormatTest {
 
         UnzipUtility unzipUtility = new UnzipUtility();
         unzipUtility.unzip(zipPath, zipDestinationPath);
-
     }
 
     @Before

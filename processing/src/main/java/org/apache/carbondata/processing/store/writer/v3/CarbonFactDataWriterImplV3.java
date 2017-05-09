@@ -287,6 +287,7 @@ public class CarbonFactDataWriterImplV3 extends AbstractFactDataWriter<short[]> 
   @Override protected void writeBlockletInfoToFile(FileChannel channel, String filePath)
       throws CarbonDataWriterException {
     try {
+
       // get the current file position
       long currentPosition = channel.size();
       // get thrift file footer instance

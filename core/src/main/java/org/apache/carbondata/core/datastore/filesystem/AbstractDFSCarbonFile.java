@@ -38,26 +38,26 @@ public abstract  class AbstractDFSCarbonFile implements CarbonFile {
   private static final LogService LOGGER =
       LogServiceFactory.getLogService(AbstractDFSCarbonFile.class.getName());
   protected FileStatus fileStatus;
+  protected FileSystem fs;
 
   public AbstractDFSCarbonFile(String filePath) {
     filePath = filePath.replace("\\", "/");
     Path path = new Path(filePath);
-    FileSystem fs;
     try {
       fs = path.getFileSystem(FileFactory.getConfiguration());
       fileStatus = fs.getFileStatus(path);
-    } catch (IOException e) {
-      LOGGER.error("Exception occurred:" + e.getMessage());
+    } catch (Exception e) {
+      e.printStackTrace();
+      LOGGER.error("Exception occured:" + e.getMessage());
     }
   }
 
   public AbstractDFSCarbonFile(Path path) {
-    FileSystem fs;
     try {
       fs = path.getFileSystem(FileFactory.getConfiguration());
       fileStatus = fs.getFileStatus(path);
     } catch (IOException e) {
-      LOGGER.error("Exception occurred:" + e.getMessage());
+      LOGGER.error("Exception occured:" + e.getMessage());
     }
   }
 
@@ -67,9 +67,7 @@ public abstract  class AbstractDFSCarbonFile implements CarbonFile {
 
   @Override public boolean createNewFile() {
     Path path = fileStatus.getPath();
-    FileSystem fs;
     try {
-      fs = fileStatus.getPath().getFileSystem(FileFactory.getConfiguration());
       return fs.createNewFile(path);
     } catch (IOException e) {
       return false;
@@ -89,14 +87,13 @@ public abstract  class AbstractDFSCarbonFile implements CarbonFile {
   }
 
   @Override public boolean exists() {
-    FileSystem fs;
     try {
       if (null != fileStatus) {
         fs = fileStatus.getPath().getFileSystem(FileFactory.getConfiguration());
         return fs.exists(fileStatus.getPath());
       }
     } catch (IOException e) {
-      LOGGER.error("Exception occurred:" + e.getMessage());
+      LOGGER.error("Exception occured:" + e.getMessage());
     }
     return false;
   }
@@ -119,7 +116,7 @@ public abstract  class AbstractDFSCarbonFile implements CarbonFile {
       fs = fileStatus.getPath().getFileSystem(FileFactory.getConfiguration());
       return fs.rename(fileStatus.getPath(), new Path(changetoName));
     } catch (IOException e) {
-      LOGGER.error("Exception occurred:" + e.getMessage());
+      LOGGER.error("Exception occured:" + e.getMessage());
       return false;
     }
   }
@@ -130,7 +127,7 @@ public abstract  class AbstractDFSCarbonFile implements CarbonFile {
       fs = fileStatus.getPath().getFileSystem(FileFactory.getConfiguration());
       return fs.delete(fileStatus.getPath(), true);
     } catch (IOException e) {
-      LOGGER.error("Exception occurred:" + e.getMessage());
+      LOGGER.error("Exception occured:" + e.getMessage());
       return false;
     }
   }
@@ -140,9 +137,7 @@ public abstract  class AbstractDFSCarbonFile implements CarbonFile {
   }
 
   @Override public boolean setLastModifiedTime(long timestamp) {
-    FileSystem fs;
     try {
-      fs = fileStatus.getPath().getFileSystem(FileFactory.getConfiguration());
       fs.setTimes(fileStatus.getPath(), timestamp, timestamp);
     } catch (IOException e) {
       return false;
@@ -165,7 +160,7 @@ public abstract  class AbstractDFSCarbonFile implements CarbonFile {
     String tempWriteFilePath = fileName + CarbonCommonConstants.TEMPWRITEFILEEXTENSION;
     FileFactory.FileType fileType = FileFactory.getFileType(fileName);
     try {
-      CarbonFile tempFile;
+      CarbonFile tempFile = null;
       // delete temporary file if it already exists at a given path
       if (FileFactory.isFileExist(tempWriteFilePath, fileType)) {
         tempFile = FileFactory.getCarbonFile(tempWriteFilePath, fileType);
@@ -197,7 +192,7 @@ public abstract  class AbstractDFSCarbonFile implements CarbonFile {
       tempFile.renameForce(fileName);
       fileTruncatedSuccessfully = true;
     } catch (IOException e) {
-      LOGGER.error("Exception occurred while truncating the file " + e.getMessage());
+      LOGGER.error("Exception occured while truncating the file " + e.getMessage());
     } finally {
       CarbonUtil.closeStreams(dataOutputStream, dataInputStream);
     }
@@ -209,7 +204,7 @@ public abstract  class AbstractDFSCarbonFile implements CarbonFile {
    *
    * @param fileTimeStamp time to be compared with latest timestamp of file
    * @param endOffset     file length to be compared with current length of file
-   * @return whether a file has been modified or not
+   * @return
    */
   @Override public boolean isFileModified(long fileTimeStamp, long endOffset) {
     boolean isFileModified = false;

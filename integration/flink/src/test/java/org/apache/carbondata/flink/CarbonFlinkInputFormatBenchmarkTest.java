@@ -181,5 +181,4 @@ public class CarbonFlinkInputFormatBenchmarkTest {
         assert status5;*/
     }
 
-
 }

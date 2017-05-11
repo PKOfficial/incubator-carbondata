@@ -63,7 +63,6 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class CarbondataStoreCreator {
-    private static int count = 0;
 
     public DataType convertType(String type) {
 
@@ -91,9 +90,8 @@ public class CarbondataStoreCreator {
         }
     }
 
-    public void createCarbonStore(AbsoluteTableIdentifier absoluteTableIdentifier, String columnString, String[] columnNames, String[] columnTypes, String sourcePath, String[] dimensionColumns) {
+    public void createCarbonStore(AbsoluteTableIdentifier absoluteTableIdentifier, String columnString, String[] columnNames, String[] columnTypes, String factFilePath, String[] dimensionColumns) {
         try {
-            String factFilePath = sourcePath;
             File storeDir = new File(absoluteTableIdentifier.getStorePath());
             CarbonUtil.deleteFoldersAndFiles(storeDir);
             CarbonProperties.getInstance().addProperty(CarbonCommonConstants.STORE_LOCATION_HDFS,
@@ -136,8 +134,8 @@ public class CarbondataStoreCreator {
             loadModel.setFactTimeStamp(System.currentTimeMillis());
             loadModel.setMaxColumns("10");
             executeGraph(loadModel, absoluteTableIdentifier.getStorePath());
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (Exception exception) {
+            exception.printStackTrace();
         }
 
     }
@@ -158,12 +156,11 @@ public class CarbondataStoreCreator {
         TableSchema tableSchema = new TableSchema();
         tableSchema.setTableName(absoluteTableIdentifier.getCarbonTableIdentifier().getTableName());
         List<ColumnSchema> columnSchemas = new ArrayList<ColumnSchema>();
-        ArrayList<Encoding> encodings = new ArrayList();
+        ArrayList<Encoding> encodings = new ArrayList<>();
         encodings.add(Encoding.DICTIONARY);
 
-        ArrayList<Encoding> emptyEncodings = new ArrayList();
+        ArrayList<Encoding> emptyEncodings = new ArrayList<>();
 
-        int x = 0;
         for (int i = 0; i < columnNames.length; i++) {
             DataType type = convertType(columnTypes[i]);
             String colName = columnNames[i];
@@ -248,7 +245,7 @@ public class CarbondataStoreCreator {
             line = reader.readLine();
         }
 
-        Cache dictCache = CacheProvider.getInstance()
+        Cache<DictionaryColumnUniqueIdentifier, org.apache.carbondata.core.cache.dictionary.Dictionary> dictCache = CacheProvider.getInstance()
                 .createCache(CacheType.REVERSE_DICTIONARY, absoluteTableIdentifier.getStorePath());
         for (int i = 0; i < set.length; i++) {
             ColumnIdentifier columnIdentifier = new ColumnIdentifier(dims.get(i).getColumnId(), null, null);
@@ -260,7 +257,7 @@ public class CarbondataStoreCreator {
             }
             writer.close();
             writer.commit();
-            org.apache.carbondata.core.cache.dictionary.Dictionary dict = (org.apache.carbondata.core.cache.dictionary.Dictionary) dictCache.get(new DictionaryColumnUniqueIdentifier(absoluteTableIdentifier.getCarbonTableIdentifier(),
+            org.apache.carbondata.core.cache.dictionary.Dictionary dict = dictCache.get(new DictionaryColumnUniqueIdentifier(absoluteTableIdentifier.getCarbonTableIdentifier(),
                     columnIdentifier, dims.get(i).getDataType()));
             CarbonDictionarySortInfoPreparator preparator = new CarbonDictionarySortInfoPreparator();
             List<String> newDistinctValues = new ArrayList<String>();
@@ -343,8 +340,7 @@ public class CarbondataStoreCreator {
         info.setDatabaseName(databaseName);
         info.setTableName(tableName);
 
-        writeLoadMetadata(loadModel.getCarbonDataLoadSchema(), loadModel.getTableName(), loadModel.getTableName(),
-                new ArrayList<LoadMetadataDetails>());
+        writeLoadMetadata(loadModel.getCarbonDataLoadSchema(), new ArrayList<LoadMetadataDetails>());
 
         if(storeFileType.equals(FileFactory.FileType.LOCAL)) {
             String segLocation = storeLocation + "/" + databaseName + "/" + tableName + "/Fact/Part0/Segment_0";
@@ -371,8 +367,7 @@ public class CarbondataStoreCreator {
         }
     }
 
-    public void writeLoadMetadata(CarbonDataLoadSchema schema, String databaseName,
-                                  String tableName, List<LoadMetadataDetails> listOfLoadFolderDetails) throws IOException {
+    public void writeLoadMetadata(CarbonDataLoadSchema schema, List<LoadMetadataDetails> listOfLoadFolderDetails) throws IOException {
         LoadMetadataDetails loadMetadataDetails = new LoadMetadataDetails();
         loadMetadataDetails.setLoadEndTime(System.currentTimeMillis());
         loadMetadataDetails.setLoadStatus("SUCCESS");
@@ -401,8 +396,8 @@ public class CarbondataStoreCreator {
                 if (null != brWriter) {
                     brWriter.flush();
                 }
-            } catch (Exception e) {
-                throw e;
+            } catch (Exception exception) {
+                throw exception;
             }
             CarbonUtil.closeStreams(brWriter);
         }
@@ -411,7 +406,6 @@ public class CarbondataStoreCreator {
 
     public String readCurrentTime() {
         SimpleDateFormat sdf = new SimpleDateFormat(CarbonCommonConstants.CARBON_TIMESTAMP);
-        String date = sdf.format(new Date());
-        return date;
+        return sdf.format(new Date());
     }
 }

@@ -46,7 +46,8 @@ public abstract  class AbstractDFSCarbonFile implements CarbonFile {
     try {
       fs = path.getFileSystem(FileFactory.getConfiguration());
       fileStatus = fs.getFileStatus(path);
-    } catch (IOException e) {
+    } catch (Exception e) {
+      e.printStackTrace();
       LOGGER.error("Exception occured:" + e.getMessage());
     }
   }

@@ -4,7 +4,6 @@ package org.apache.carbondata.flink;
 import org.apache.carbondata.flink.utils.UnzipUtility;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.operators.DataSource;
-import org.apache.flink.api.java.tuple.Tuple2;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -14,8 +13,6 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.logging.Logger;
 
-import static javax.script.ScriptEngine.FILENAME;
-
 public class CarbonFlinkInputFormatBenchmarkTest {
 
     private final static Logger LOGGER = Logger.getLogger(CarbonFlinkInputFormatBenchmarkTest.class.getName());
@@ -23,6 +20,16 @@ public class CarbonFlinkInputFormatBenchmarkTest {
 
     static String getRootPath() throws IOException {
         return new File(CarbonFlinkInputFormatBenchmarkTest.class.getResource("/").getPath() + "../../../..").getCanonicalPath();
+    }
+
+    @BeforeClass
+    public static void defineStore() throws IOException {
+        String zipPath = getRootPath() + "/integration/flink/src/test/resources/store-input.zip";
+        String zipDestinationPath = getRootPath() + "/integration/flink/target";
+
+        UnzipUtility unzipUtility = new UnzipUtility();
+        unzipUtility.unzip(zipPath, zipDestinationPath);
+
     }
 
     String getPerformanceReportFilePath() throws IOException {
@@ -41,16 +48,6 @@ public class CarbonFlinkInputFormatBenchmarkTest {
         }
     }
 
-    @BeforeClass
-    public static void defineStore() throws IOException {
-        String zipPath = getRootPath() + "/integration/flink/src/test/resources/store-input.zip";
-        String zipDestinationPath = getRootPath() + "/integration/flink/target";
-
-        UnzipUtility unzipUtility = new UnzipUtility();
-        unzipUtility.unzip(zipPath, zipDestinationPath);
-
-    }
-
     @Test
     public void generatePerformanceReport() throws Exception {
 
@@ -67,7 +64,7 @@ public class CarbonFlinkInputFormatBenchmarkTest {
             String path = "/integration/flink/target/store-input/default/uniqdata";
             long t1 = System.currentTimeMillis();
             CarbonDataFlinkInputFormat carbondataFlinkInputFormat = new CarbonDataFlinkInputFormat(getRootPath() + path, columns, false);
-            DataSource<Tuple2<Void, Object[]>> dataSource = env.createInput(carbondataFlinkInputFormat.getInputFormat());
+            DataSource dataSource = env.createInput(carbondataFlinkInputFormat.getInputFormat());
             int rowCount = dataSource.collect().size();
             assert (rowCount == 100);
             long t2 = System.currentTimeMillis();
@@ -78,7 +75,7 @@ public class CarbonFlinkInputFormatBenchmarkTest {
             Boolean status = writeToFile("Time taken for Hundred records :::  (in milliseconds) " + timeTaken + "\n");
             assert (status);
         }
-        Boolean status = writeToFile("\n"+ date.toString() + " : Average Time taken for Hundred records :::  (in milliseconds) " + averageTime/3 + "\n");
+        Boolean status = writeToFile("\n" + date.toString() + " : Average Time taken for Hundred records :::  (in milliseconds) " + averageTime / 3 + "\n");
         writeToFile("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ \n\n");
         assert (status);
 
@@ -88,7 +85,7 @@ public class CarbonFlinkInputFormatBenchmarkTest {
             long t3 = System.currentTimeMillis();
             String path1 = "/integration/flink/target/store-input/default/1000_uniqdata";
             CarbonDataFlinkInputFormat carbondataFlinkInputFormat1 = new CarbonDataFlinkInputFormat(getRootPath() + path1, columns, false);
-            DataSource<Tuple2<Void, Object[]>> dataSource1 = env.createInput(carbondataFlinkInputFormat1.getInputFormat());
+            DataSource dataSource1 = env.createInput(carbondataFlinkInputFormat1.getInputFormat());
             int rowCount1 = dataSource1.collect().size();
             assert (rowCount1 == 1000);
             long t4 = System.currentTimeMillis();
@@ -98,7 +95,7 @@ public class CarbonFlinkInputFormatBenchmarkTest {
             Boolean status1 = writeToFile("Time taken for thousand records :::  (in milliseconds) " + timeTaken1 + "\n");
             assert (status1);
         }
-        Boolean status1 = writeToFile("\n"+ date.toString() + " : Average Time taken for Hundred records :::  (in milliseconds) " + averageTime/3 + "\n");
+        Boolean status1 = writeToFile("\n" + date.toString() + " : Average Time taken for Hundred records :::  (in milliseconds) " + averageTime / 3 + "\n");
         writeToFile("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ \n\n");
         assert (status1);
 
@@ -109,7 +106,7 @@ public class CarbonFlinkInputFormatBenchmarkTest {
             long t5 = System.currentTimeMillis();
             String path2 = "/integration/flink/target/store-input/default/10000_uniqdata";
             CarbonDataFlinkInputFormat carbondataFlinkInputFormat2 = new CarbonDataFlinkInputFormat(getRootPath() + path2, columns, false);
-            DataSource<Tuple2<Void, Object[]>> dataSource2 = env.createInput(carbondataFlinkInputFormat2.getInputFormat());
+            DataSource dataSource2 = env.createInput(carbondataFlinkInputFormat2.getInputFormat());
             int rowCount2 = dataSource2.collect().size();
             assert (rowCount2 == 10000);
             long t6 = System.currentTimeMillis();
@@ -119,7 +116,7 @@ public class CarbonFlinkInputFormatBenchmarkTest {
             Boolean status2 = writeToFile("Time taken for Ten Thousand records :::  (in milliseconds) " + timeTaken2 + "\n");
             assert (status2);
         }
-        Boolean status2 = writeToFile("\n"+ date.toString() + " : Average Time taken for Ten Thousand records :::  (in milliseconds) " + averageTime/3 + "\n");
+        Boolean status2 = writeToFile("\n" + date.toString() + " : Average Time taken for Ten Thousand records :::  (in milliseconds) " + averageTime / 3 + "\n");
         writeToFile("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ \n\n");
         assert (status2);
 
@@ -129,7 +126,7 @@ public class CarbonFlinkInputFormatBenchmarkTest {
             long t7 = System.currentTimeMillis();
             String path3 = "/integration/flink/target/store-input/default/uniqdata_1l";
             CarbonDataFlinkInputFormat carbondataFlinkInputFormat3 = new CarbonDataFlinkInputFormat(getRootPath() + path3, columns, false);
-            DataSource<Tuple2<Void, Object[]>> dataSource3 = env.createInput(carbondataFlinkInputFormat3.getInputFormat());
+            DataSource dataSource3 = env.createInput(carbondataFlinkInputFormat3.getInputFormat());
             int rowCount3 = dataSource3.collect().size();
             assert (rowCount3 == 105308);
             long t8 = System.currentTimeMillis();
@@ -139,7 +136,7 @@ public class CarbonFlinkInputFormatBenchmarkTest {
             Boolean status3 = writeToFile("Time taken for One Lac records :::  (in milliseconds) " + timeTaken3 + "\n");
             assert (status3);
         }
-        Boolean status3 = writeToFile("\n"+ date.toString() + " : Average Time taken for One Lac records :::  (in milliseconds) " + averageTime/3 + "\n");
+        Boolean status3 = writeToFile("\n" + date.toString() + " : Average Time taken for One Lac records :::  (in milliseconds) " + averageTime / 3 + "\n");
         writeToFile("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ \n\n");
         assert status3;
 
@@ -149,7 +146,7 @@ public class CarbonFlinkInputFormatBenchmarkTest {
             long t9 = System.currentTimeMillis();
             String path4 = "/integration/flink/target/store-input/default/5lac_uniqdata";
             CarbonDataFlinkInputFormat carbondataFlinkInputFormat4 = new CarbonDataFlinkInputFormat(getRootPath() + path4, columns, false);
-            DataSource<Tuple2<Void, Object[]>> dataSource4 = env.createInput(carbondataFlinkInputFormat4.getInputFormat());
+            DataSource dataSource4 = env.createInput(carbondataFlinkInputFormat4.getInputFormat());
             int rowCount4 = dataSource4.collect().size();
             assert (rowCount4 == 526544);
             long t10 = System.currentTimeMillis();
@@ -159,7 +156,7 @@ public class CarbonFlinkInputFormatBenchmarkTest {
             Boolean status4 = writeToFile("Time taken for Five Lac records :::  (in milliseconds) " + timeTaken4 + "\n");
             assert (status4);
         }
-        Boolean status4 = writeToFile("\n"+ date.toString() + " : Average Time taken for Five Lac records :::  (in milliseconds) " + averageTime/3 + "\n");
+        Boolean status4 = writeToFile("\n" + date.toString() + " : Average Time taken for Five Lac records :::  (in milliseconds) " + averageTime / 3 + "\n");
         writeToFile("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ \n\n");
         assert status4;
 
@@ -183,7 +180,6 @@ public class CarbonFlinkInputFormatBenchmarkTest {
         writeToFile("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ \n\n");
         assert status5;*/
     }
-
 
 
 }

@@ -6,13 +6,11 @@ import org.apache.flink.api.java.DataSet;
 import org.apache.flink.api.java.ExecutionEnvironment;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.runtime.client.JobExecutionException;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class CarbonDataFlinkOutputFormatTest {
@@ -30,6 +28,11 @@ public class CarbonDataFlinkOutputFormatTest {
 
         UnzipUtility unzipUtility = new UnzipUtility();
         unzipUtility.unzip(zipPath, zipDestinationPath);
+    }
+
+    @AfterClass
+    public static void removeStore() throws IOException {
+        FileUtils.deleteDirectory(new File(getRootPath() + "/integration/flink/target/store"));
     }
 
     @Before
@@ -65,7 +68,7 @@ public class CarbonDataFlinkOutputFormatTest {
         dataSource.output(outputFormat.finish());
         environment.execute();
         long writeCount = CarbonDataFlinkOutputFormat.getWriteCount();
-        assert (writeCount == recordCount);
+        Assert.assertEquals(writeCount, recordCount);
     }
 
     @Test
@@ -96,9 +99,8 @@ public class CarbonDataFlinkOutputFormatTest {
         dataSource.output(outputFormat.finish());
         env.execute();
         long writeCount = CarbonDataFlinkOutputFormat.getWriteCount();
-        assert (writeCount == recordCount);
+        Assert.assertEquals(writeCount, recordCount);
     }
-
 
     @Test
     public void testOutputFormatForWrongColumns() throws Exception {
@@ -130,7 +132,7 @@ public class CarbonDataFlinkOutputFormatTest {
             environment.execute();
             assert false;
         } catch (Exception e) {
-            assert (true);
+            assert true;
         }
 
     }
@@ -238,7 +240,7 @@ public class CarbonDataFlinkOutputFormatTest {
             environment.execute();
             assert false;
         } catch (JobExecutionException ex) {
-            LOGGER.info("Caught Exception : " + ex);
+            LOGGER.log(Level.SEVERE, ex.getMessage());
             assert true;
         }
         long writeCount = CarbonDataFlinkOutputFormat.getWriteCount();
@@ -259,18 +261,18 @@ public class CarbonDataFlinkOutputFormatTest {
         String[] columnHeaders = {"ID", "date", "country", "salary"};
 
         try {
-        CarbonDataFlinkOutputFormat.CarbonDataOutputFormatBuilder outputFormat =
-                CarbonDataFlinkOutputFormat.buildCarbonDataOutputFormat()
-                        .setColumnNames(columnHeaders)
-                        .setColumnTypes(columnTypes)
-                        .setStorePath(getRootPath() + "/integration/flink/target/store")
-                        .setDatabaseName("testdb2")
-                        .setTableName("testtable2")
-                        .setRecordCount(recordCount);
+            CarbonDataFlinkOutputFormat.CarbonDataOutputFormatBuilder outputFormat =
+                    CarbonDataFlinkOutputFormat.buildCarbonDataOutputFormat()
+                            .setColumnNames(columnHeaders)
+                            .setColumnTypes(columnTypes)
+                            .setStorePath(getRootPath() + "/integration/flink/target/store")
+                            .setDatabaseName("testdb2")
+                            .setTableName("testtable2")
+                            .setRecordCount(recordCount);
 
-        dataSource.output(outputFormat.finish());
-        environment.execute();
-        assert false;
+            dataSource.output(outputFormat.finish());
+            environment.execute();
+            assert false;
         } catch (IllegalArgumentException ex) {
             assert true;
         }
@@ -302,7 +304,7 @@ public class CarbonDataFlinkOutputFormatTest {
             environment.execute();
             assert false;
         } catch (IllegalArgumentException ex) {
-            LOGGER.info(ex.getMessage());
+            LOGGER.log(Level.SEVERE, ex.getMessage());
             assert true;
         }
     }
@@ -333,7 +335,7 @@ public class CarbonDataFlinkOutputFormatTest {
             environment.execute();
             assert false;
         } catch (IllegalArgumentException ex) {
-            LOGGER.info(ex.getMessage());
+            LOGGER.log(Level.SEVERE, ex.getMessage());
             assert true;
         }
     }
@@ -364,7 +366,7 @@ public class CarbonDataFlinkOutputFormatTest {
             environment.execute();
             assert false;
         } catch (IllegalArgumentException ex) {
-            LOGGER.info(ex.getMessage());
+            LOGGER.log(Level.SEVERE, ex.getMessage());
             assert true;
         }
     }
@@ -377,7 +379,6 @@ public class CarbonDataFlinkOutputFormatTest {
         CarbonDataFlinkInputFormat carbondataFlinkInputFormat = new CarbonDataFlinkInputFormat(getRootPath() + path, columns, false);
 
         DataSet<Tuple2<Void, Object[]>> dataSource = environment.createInput(carbondataFlinkInputFormat.getInputFormat());
-        long recordCount = dataSource.count();
 
         String[] columnTypes = {"Int", "Date", "String", "Long"};
         String[] columnHeaders = {"ID", "date", "country", "salary"};
@@ -395,7 +396,7 @@ public class CarbonDataFlinkOutputFormatTest {
             environment.execute();
             assert false;
         } catch (IllegalArgumentException ex) {
-            LOGGER.info(ex.getMessage());
+            LOGGER.log(Level.SEVERE, ex.getMessage());
             assert true;
         }
     }
@@ -424,7 +425,7 @@ public class CarbonDataFlinkOutputFormatTest {
             environment.execute();
             assert false;
         } catch (IllegalArgumentException ex) {
-            LOGGER.info(ex.getMessage());
+            LOGGER.log(Level.SEVERE, ex.getMessage());
             assert true;
         }
     }
@@ -454,14 +455,9 @@ public class CarbonDataFlinkOutputFormatTest {
             environment.execute();
             assert false;
         } catch (IllegalArgumentException ex) {
-            LOGGER.info(ex.getMessage());
+            LOGGER.log(Level.SEVERE, ex.getMessage());
             assert true;
         }
-    }
-
-    @AfterClass
-    public static void removeStore() throws IOException {
-        FileUtils.deleteDirectory(new File(getRootPath() + "/integration/flink/target/store"));
     }
 
 }

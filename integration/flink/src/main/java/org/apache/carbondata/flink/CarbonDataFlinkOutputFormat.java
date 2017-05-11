@@ -13,20 +13,31 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.UUID;
-import java.util.logging.Logger;
 
 public class CarbonDataFlinkOutputFormat extends RichOutputFormat<Tuple2<Void, Object[]>> {
 
+    public static long writeCount = 0;
     private String[] columnNames;
     private String[] columnTypes;
     private String[] dimensionColumns;
     private String storePath;
     private String databaseName;
     private String tableName;
-    public static long writeCount = 0;
     private long recordCount = 0;
     private ArrayList<Tuple2<Void, Object[]>> records = new ArrayList<>();
-    private final static Logger LOGGER = Logger.getLogger(CarbonDataFlinkOutputFormat.class.getName());
+
+    /**
+     * This method returns the number of records written to carbondata table
+     *
+     * @return writeCount
+     */
+    public static long getWriteCount() {
+        return writeCount;
+    }
+
+    public static CarbonDataFlinkOutputFormat.CarbonDataOutputFormatBuilder buildCarbonDataOutputFormat() {
+        return new CarbonDataFlinkOutputFormat.CarbonDataOutputFormatBuilder();
+    }
 
     private String getSourcePath() throws IOException {
         String path = new File(this.getClass().getResource("/").getPath() + "../../../..").getCanonicalPath();
@@ -44,21 +55,24 @@ public class CarbonDataFlinkOutputFormat extends RichOutputFormat<Tuple2<Void, O
         boolean isValid = true;
         for (int iterator = 0; iterator < columnTypes.length; iterator++) {
             if (columnTypes[iterator].toLowerCase().equals("string") && !Arrays.asList(dimensionColumns).contains(columnNames[iterator])) {
-                    isValid = false;
-                    break;
+                isValid = false;
+                break;
             }
         }
         return isValid;
     }
 
     @Override
-    public void configure(Configuration parameters) { }
+    public void configure(Configuration parameters) {
+    }
 
     @Override
-    public void open(int taskNumber, int numTasks) throws IOException { }
+    public void open(int taskNumber, int numTasks) throws IOException {
+    }
 
     /**
      * This method is responsible for creating carbon table
+     *
      * @param record
      * @throws IOException
      */
@@ -96,8 +110,8 @@ public class CarbonDataFlinkOutputFormat extends RichOutputFormat<Tuple2<Void, O
                         String row = (element.toString().substring(7, element.toString().length() - 2)).replace(" ", "");
                         bufferedWriter.write(row + "\n");
                     }
-                } catch (IOException e) {
-                    e.printStackTrace();
+                } catch (IOException ioException) {
+                    ioException.printStackTrace();
                 } finally {
                     try {
                         if (bufferedWriter != null) {
@@ -106,8 +120,8 @@ public class CarbonDataFlinkOutputFormat extends RichOutputFormat<Tuple2<Void, O
                         if (fileWriter != null) {
                             fileWriter.close();
                         }
-                    } catch (IOException ex) {
-                        ex.printStackTrace();
+                    } catch (IOException ioException) {
+                        ioException.printStackTrace();
                     }
                 }
                 CarbondataStoreCreator carbondataStoreCreator = new CarbondataStoreCreator();
@@ -118,30 +132,17 @@ public class CarbonDataFlinkOutputFormat extends RichOutputFormat<Tuple2<Void, O
         }
     }
 
-    /**
-     * This method returns the number of records written to carbondata table
-     * @return writeCount
-     */
-    public static long getWriteCount() {
-        return writeCount;
-    }
-
     @Override
-    public void close() throws IOException { }
-
-    public static CarbonDataFlinkOutputFormat.CarbonDataOutputFormatBuilder buildCarbonDataOutputFormat() {
-        return new CarbonDataFlinkOutputFormat.CarbonDataOutputFormatBuilder();
+    public void close() throws IOException {
     }
 
-    public static class CarbonDataOutputFormatBuilder {
+    static class CarbonDataOutputFormatBuilder {
 
         private final CarbonDataFlinkOutputFormat format = new CarbonDataFlinkOutputFormat();
 
-        public CarbonDataOutputFormatBuilder() {
-        }
-
         /**
          * This method set ColumnNames of the carbon table
+         *
          * @param columns
          * @return CarbonDataFlinkOutputFormat
          */
@@ -152,6 +153,7 @@ public class CarbonDataFlinkOutputFormat extends RichOutputFormat<Tuple2<Void, O
 
         /**
          * This method set ColumnTypes of the carbon table
+         *
          * @param columnTypes
          * @return CarbonDataFlinkOutputFormat
          */
@@ -162,6 +164,7 @@ public class CarbonDataFlinkOutputFormat extends RichOutputFormat<Tuple2<Void, O
 
         /**
          * This method sets the store location for carbon table
+         *
          * @param storePath : location where carbon table needs to be created
          * @return CarbonDataFlinkOutputFormat
          */
@@ -182,6 +185,7 @@ public class CarbonDataFlinkOutputFormat extends RichOutputFormat<Tuple2<Void, O
 
         /**
          * This method is used to set the record count
+         *
          * @param recordCount : Number of rows received from input format
          * @return CarbonDataFlinkOutputFormat
          */
@@ -192,7 +196,8 @@ public class CarbonDataFlinkOutputFormat extends RichOutputFormat<Tuple2<Void, O
 
         /**
          * This method set the dimension Columns
-         *             NOTE: All Strings must be part of dimension column
+         * NOTE: All Strings must be part of dimension column
+         *
          * @param dimensionColumns
          * @return CarbonDataFlinkOutputFormat
          */
@@ -203,34 +208,35 @@ public class CarbonDataFlinkOutputFormat extends RichOutputFormat<Tuple2<Void, O
 
         /**
          * This method checks if all required inputs are provided or not
+         *
          * @return CarbonDataFlinkOutputFormat
          */
         public CarbonDataFlinkOutputFormat finish() {
-            if(format.databaseName == null){
+            if (format.databaseName == null) {
                 throw new IllegalArgumentException("No database name supplied.");
             }
 
-            if(format.tableName == null){
+            if (format.tableName == null) {
                 throw new IllegalArgumentException("No tablename supplied.");
             }
 
-            if(format.storePath == null){
+            if (format.storePath == null) {
                 throw new IllegalArgumentException("No storePath supplied.");
             }
 
-            if(format.columnNames == null){
+            if (format.columnNames == null) {
                 throw new IllegalArgumentException("No column names supplied.");
             }
 
-            if(format.columnTypes == null){
+            if (format.columnTypes == null) {
                 throw new IllegalArgumentException("No column Types supplied.");
             }
 
-            if(format.dimensionColumns == null){
+            if (format.dimensionColumns == null) {
                 throw new IllegalArgumentException("No dictionary columns supplied.");
             }
 
-            if(format.recordCount == 0){
+            if (format.recordCount == 0) {
                 throw new IllegalArgumentException("No recordCount supplied.");
             }
 

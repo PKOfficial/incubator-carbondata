@@ -55,7 +55,7 @@ public class CarbonDataFlinkInputFormat {
      *
      * @return Hadoop input format configured as per carbon flink input format
      */
-    public HadoopInputFormat getInputFormat() throws HadoopFormatException {
+    public HadoopInputFormat<Void, Object[]> getInputFormat() throws HadoopFormatException {
         if (!isValidPath()) {
             throw new IllegalArgumentException("Invalid path to table." + path);
         } else if (isEmptyColumn()) {
@@ -68,7 +68,7 @@ public class CarbonDataFlinkInputFormat {
 
             CarbonInputFormat.setColumnProjection(conf, projections);
             try {
-                HadoopInputFormat format = HadoopInputs.readHadoopFile(new CarbonInputFormat(),
+                HadoopInputFormat<Void, Object[]> format = HadoopInputs.readHadoopFile(new CarbonInputFormat(),
                 Void.class, Object[].class, path,new Job(conf));
                 return format;
             } catch (Exception exception) {

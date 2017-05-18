@@ -1,7 +1,8 @@
-package org.apache.streaming.store
+package org.apache.streaming.local
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
+import org.apache.streaming.store.TableDetails
 
 class SparkReadingCSV {
 
@@ -13,7 +14,7 @@ class SparkReadingCSV {
       .option("header","true")
       .csv(tableDetails.filePath)
     csvDF.printSchema()
-    csvDF.map(data => data.getAs[String]("name"))
+    csvDF
   }
 
   private def getSchemaStructure(schema: Map[String, DataType]): StructType = {

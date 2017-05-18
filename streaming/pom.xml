@@ -14,8 +14,15 @@
     <!--<dependency>
         <groupId>org.scala-lang</groupId>
         <artifactId>scala-library</artifactId>
-        <version>2.11.0</version>
+        <version>2.11.8</version>
     </dependency>-->
+    <!-- https://mvnrepository.com/artifact/org.scala-lang/scala-parser-combinators -->
+    <!--<dependency>
+        <groupId>org.scala-lang</groupId>
+        <artifactId>scala-parser-combinators</artifactId>
+        <version>2.11.0-M4</version>
+    </dependency>-->
+
     <dependency>
         <groupId>org.apache.spark</groupId>
         <artifactId>spark-core_2.11</artifactId>
@@ -27,6 +34,13 @@
         <artifactId>spark-sql_2.11</artifactId>
         <version>2.1.1</version>
     </dependency>
+
+    <dependency>
+        <groupId>org.apache.carbondata</groupId>
+        <artifactId>carbondata-core</artifactId>
+        <version>1.1.0-incubating-SNAPSHOT</version>
+    </dependency>
+
 
 </dependencies>
     <build>

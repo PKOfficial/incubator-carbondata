@@ -42,6 +42,7 @@ public class CarbonTablePath extends Path {
   protected static final String TABLE_UPDATE_STATUS_FILE = "tableupdatestatus";
   protected static final String FACT_DIR = "Fact";
   protected static final String SEGMENT_PREFIX = "Segment_";
+  protected static final String STREAMING_SEGMENT_PREFIX = "StreamingSegment_";
   protected static final String PARTITION_PREFIX = "Part";
   protected static final String CARBON_DATA_EXT = ".carbondata";
   protected static final String CARBON_DELTE_DELTA_EXT = ".deletedelta";
@@ -418,6 +419,10 @@ public class CarbonTablePath extends Path {
 
   private String getSegmentDir(String partitionId, String segmentId) {
     return getPartitionDir(partitionId) + File.separator + SEGMENT_PREFIX + segmentId;
+  }
+
+  public String getStreamingSegmentDir(String partitionId, String streamingSegmentId) {
+   return getPartitionDir(partitionId) + File.separator + STREAMING_SEGMENT_PREFIX + streamingSegmentId;
   }
 
   public String getPartitionDir(String partitionId) {

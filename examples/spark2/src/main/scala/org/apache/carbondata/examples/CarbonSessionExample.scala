@@ -75,11 +75,14 @@ object CarbonSessionExample {
     spark.sql(
       s"""
          | LOAD DATA LOCAL INPATH '$path'
-         | INTO TABLE carbon_table
+         | INTO TABLE carbon_table3
          | OPTIONS('FILEHEADER'='shortField,intField,bigintField,doubleField,stringField,timestampField,decimalField,dateField,charField,floatField,complexData',
          | 'COMPLEX_DELIMITER_LEVEL_1'='#')
        """.stripMargin)
     // scalastyle:on
+
+    spark.sql("DESC FORMATTED carbon_table").show
+
 
     spark.sql(
       s"""

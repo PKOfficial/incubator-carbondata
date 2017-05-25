@@ -74,7 +74,7 @@ public class CarbondataStoreCreator {
             case "double":
                 return DataType.DOUBLE;
             case "float":
-                return DataType.FLOAT;
+                return DataType.DOUBLE;
             case "timestamp":
                 return DataType.TIMESTAMP;
             case "decimal":
@@ -111,9 +111,7 @@ public class CarbondataStoreCreator {
             loadModel.setDefaultTimestampFormat(CarbonProperties.getInstance().getProperty(
                     CarbonCommonConstants.CARBON_TIMESTAMP_FORMAT,
                     CarbonCommonConstants.CARBON_TIMESTAMP_DEFAULT_FORMAT));
-            loadModel.setDefaultDateFormat(CarbonProperties.getInstance().getProperty(
-                    CarbonCommonConstants.CARBON_DATE_FORMAT,
-                    CarbonCommonConstants.CARBON_DATE_DEFAULT_FORMAT));
+            loadModel.setDefaultDateFormat(null);
             loadModel
                     .setSerializationNullFormat(
                             TableOptionConstant.SERIALIZATION_NULL_FORMAT.getName() + "," + "\\N");
@@ -132,7 +130,7 @@ public class CarbondataStoreCreator {
             loadModel.setSegmentId("0");
             loadModel.setPartitionId("0");
             loadModel.setFactTimeStamp(System.currentTimeMillis());
-            loadModel.setMaxColumns("10");
+            loadModel.setMaxColumns("2000");
             executeGraph(loadModel, absoluteTableIdentifier.getStorePath());
         } catch (Exception exception) {
             exception.printStackTrace();
@@ -149,6 +147,35 @@ public class CarbondataStoreCreator {
         return isDimension;
     }
 
+    private void setEncodings(ColumnSchema column, DataType type) {
+        switch(type.toString().toLowerCase()) {
+            case "int":
+            case "float":
+            case "long":
+            case "double":
+                ArrayList<Encoding> emptyEncodings = new ArrayList<>();
+                column.setEncodingList(emptyEncodings);
+                break;
+            case "string":
+                ArrayList<Encoding> encodings = new ArrayList<>();
+                encodings.add(Encoding.DICTIONARY);
+                encodings.add(Encoding.INVERTED_INDEX);
+                column.setEncodingList(encodings);
+                break;
+            case "date":
+                ArrayList<Encoding> dateEncodings = new ArrayList<>();
+                dateEncodings.add(Encoding.DICTIONARY);
+                dateEncodings.add(Encoding.DIRECT_DICTIONARY);
+                dateEncodings.add(Encoding.INVERTED_INDEX);
+                column.setEncodingList(dateEncodings);
+                break;
+            default:
+                ArrayList<Encoding> emptyEncoding = new ArrayList<>();
+                column.setEncodingList(emptyEncoding);
+        }
+    }
+
+
     private CarbonTable createTable(AbsoluteTableIdentifier absoluteTableIdentifier, String[] columnNames, String[] columnTypes, String[] dimensionColumns) throws IOException {
         TableInfo tableInfo = new TableInfo();
         tableInfo.setStorePath(absoluteTableIdentifier.getStorePath());
@@ -158,6 +185,7 @@ public class CarbondataStoreCreator {
         List<ColumnSchema> columnSchemas = new ArrayList<ColumnSchema>();
         ArrayList<Encoding> encodings = new ArrayList<>();
         encodings.add(Encoding.DICTIONARY);
+        encodings.add(Encoding.INVERTED_INDEX);
 
         ArrayList<Encoding> emptyEncodings = new ArrayList<>();
 
@@ -171,12 +199,11 @@ public class CarbondataStoreCreator {
             column.setColumnUniqueId(UUID.randomUUID().toString());
             if (isDimensionColumn(dimensionColumns, colName)) {
                 column.setDimensionColumn(true);
-                column.setEncodingList(encodings);
             }
             else {
                 column.setDimensionColumn(false);
-                column.setEncodingList(emptyEncodings);
             }
+            setEncodings(column, type);
             column.setColumnGroup(i + 1);
             columnSchemas.add(column);
         }
@@ -276,7 +303,7 @@ public class CarbondataStoreCreator {
     }
 
     public void executeGraph(CarbonLoadModel loadModel, String storeLocation) throws Exception {
-        new File(storeLocation).mkdirs();
+//        new File(storeLocation).mkdirs();
         String outPutLoc = storeLocation + "/etl";
         String databaseName = loadModel.getDatabaseName();
         String tableName = loadModel.getTableName();
@@ -292,6 +319,8 @@ public class CarbondataStoreCreator {
         CarbonProperties.getInstance().addProperty("high.cardinality.value", "100000");
         CarbonProperties.getInstance().addProperty("is.compressed.keyblock", "false");
         CarbonProperties.getInstance().addProperty("carbon.leaf.node.size", "120000");
+        CarbonProperties.getInstance()
+                .addProperty(CarbonCommonConstants.CARBON_DATE_FORMAT, "yyyy/MM/dd");
 
         String graphPath =
                 outPutLoc + File.separator + loadModel.getDatabaseName() + File.separator + tableName

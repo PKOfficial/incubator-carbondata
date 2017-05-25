@@ -34,8 +34,8 @@ object CarbonSessionExample {
     val metastoredb = s"$rootPath/examples/spark2/target"
 
     CarbonProperties.getInstance()
-      .addProperty("carbon.kettle.home", s"$rootPath/processing/carbonplugins")
-      .addProperty(CarbonCommonConstants.CARBON_TIMESTAMP_FORMAT, "yyyy/MM/dd")
+//      .addProperty("carbon.kettle.home", s"$rootPath/processing/carbonplugins")
+//      .addProperty(CarbonCommonConstants.CARBON_TIMESTAMP_FORMAT, "yyyy/MM/dd")
 
     import org.apache.spark.sql.CarbonSession._
 
@@ -48,92 +48,29 @@ object CarbonSessionExample {
 
     spark.sparkContext.setLogLevel("WARN")
 
-    spark.sql("DROP TABLE IF EXISTS carbon_table")
+    spark.sql("DROP TABLE IF EXISTS my_table")
 
     // Create table
-    spark.sql(
-      s"""
-         | CREATE TABLE carbon_table(
-         |    shortField short,
-         |    intField int,
-         |    bigintField long,
-         |    doubleField double,
-         |    stringField string,
-         |    timestampField timestamp,
-         |    decimalField decimal(18,2),
-         |    dateField date,
-         |    charField char(5),
-         |    floatField float,
-         |    complexData array<string>
-         | )
-         | STORED BY 'carbondata'
-         | TBLPROPERTIES('DICTIONARY_INCLUDE'='dateField, charField')
-       """.stripMargin)
+    spark.sql("""CREATE TABLE my_table(name STRING, ocuupation STRING, salary INTEGER, age INTEGER, dob DATE) STORED BY 'carbondata'""")
 
-    val path = s"$rootPath/examples/spark2/src/main/resources/data.csv"
+    val path = s"$rootPath/tools/src/main/resources/user.csv"
+    println("------------path-------------")
 
     // scalastyle:off
     spark.sql(
       s"""
          | LOAD DATA LOCAL INPATH '$path'
-         | INTO TABLE carbon_table
-         | options('FILEHEADER'='shortField,intField,bigintField,doubleField,stringField,timestampField,decimalField,dateField,charField,floatField,complexData','COMPLEX_DELIMITER_LEVEL_1'='#')
+         | INTO TABLE my_table
+         | options('FILEHEADER'='name,occupation,salary,age,dob')
        """.stripMargin)
+
     // scalastyle:on
-
     spark.sql("""
              SELECT *
-             FROM carbon_table
-             where stringfield = 'spark' and decimalField > 40
+             FROM my_table
               """).show
 
-    spark.sql("""
-             SELECT *
-             FROM carbon_table where length(stringField) = 5
-              """).show
-
-    spark.sql("""
-             SELECT *
-             FROM carbon_table where date_format(dateField, "yyyy-MM-dd") = "2015-07-23"
-              """).show
-
-    spark.sql("""
-             select count(stringField) from carbon_table
-              """.stripMargin).show
-
-    spark.sql("""
-           SELECT sum(intField), stringField
-           FROM carbon_table
-           GROUP BY stringField
-              """).show
-
-    spark.sql(
-      """
-        |select t1.*, t2.*
-        |from carbon_table t1, carbon_table t2
-        |where t1.stringField = t2.stringField
-      """.stripMargin).show
-
-    spark.sql(
-      """
-        |with t1 as (
-        |select * from carbon_table
-        |union all
-        |select * from carbon_table
-        |)
-        |select t1.*, t2.*
-        |from t1, carbon_table t2
-        |where t1.stringField = t2.stringField
-      """.stripMargin).show
-
-    spark.sql("""
-             SELECT *
-             FROM carbon_table
-             where stringfield = 'spark' and floatField > 2.8
-              """).show
-
-    // Drop table
-    spark.sql("DROP TABLE IF EXISTS carbon_table")
+    spark.sql("DROP TABLE IF EXISTS my_table")
   }
 
 }

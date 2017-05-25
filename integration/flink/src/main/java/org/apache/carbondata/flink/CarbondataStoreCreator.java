@@ -61,8 +61,12 @@ import java.io.*;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class CarbondataStoreCreator {
+    private final static Logger LOGGER = Logger.getLogger(CarbondataStoreCreator.class.getName());
+
 
     public DataType convertType(String type) {
 
@@ -98,7 +102,7 @@ public class CarbondataStoreCreator {
                     absoluteTableIdentifier.getStorePath());
 
             CarbonTable table = createTable(absoluteTableIdentifier, columnNames, columnTypes, dimensionColumns);
-            writeDictionary(factFilePath, table, absoluteTableIdentifier);
+            writeDictionary(factFilePath, table, absoluteTableIdentifier, dimensionColumns);
             CarbonDataLoadSchema schema = new CarbonDataLoadSchema(table);
             CarbonLoadModel loadModel = new CarbonLoadModel();
             loadModel.setCarbonDataLoadSchema(schema);
@@ -249,10 +253,31 @@ public class CarbondataStoreCreator {
         return CarbonMetadata.getInstance().getCarbonTable(tableInfo.getTableUniqueName());
     }
 
-    private void writeDictionary(String factFilePath, CarbonTable table, AbsoluteTableIdentifier absoluteTableIdentifier) throws Exception {
+    private int[] getDimensionsHeadersIndex(String[] headerSplit, String[] dimensionColumns) {
+        if(headerSplit == null || dimensionColumns == null) {
+            LOGGER.log(Level.WARNING, "Either of dimension Columns or headers is null");
+            return null;
+        } else {
+            int [] dimensionIndexValues = new int[dimensionColumns.length];
+            int count = 0;
+
+            for(int dimColumnIndex = 0 ; dimColumnIndex < dimensionColumns.length; dimColumnIndex++) {
+                String dimColumn = dimensionColumns[dimColumnIndex];
+                for(int headerIndex = 0 ; headerIndex < headerSplit.length ; headerIndex++){
+                    if(dimColumn.equals(headerSplit[headerIndex])){
+                        dimensionIndexValues[count++] = headerIndex;
+                    }
+                }
+            }
+            return dimensionIndexValues;
+        }
+    }
+
+
+    private void writeDictionary(String factFilePath, CarbonTable table, AbsoluteTableIdentifier absoluteTableIdentifier, String[] dimensionColumns) throws Exception {
         BufferedReader reader = new BufferedReader(new FileReader(factFilePath));
         String header = reader.readLine();
-        String[] split = header.split(",");
+        String[] headerSplit = header.split(",");
         List<CarbonColumn> allCols = new ArrayList<CarbonColumn>();
         List<CarbonDimension> dims = table.getDimensionByTableName(table.getFactTableName());
         allCols.addAll(dims);
@@ -261,7 +286,27 @@ public class CarbondataStoreCreator {
 
         Set<String>[] set = new HashSet[dims.size()];
         for (int i = 0; i < set.length; i++) {
-            set[i] = new HashSet<String>();
+            set[i] = new HashSet<>();
+        }
+
+        int[] dimensionHeaderIndex = getDimensionsHeadersIndex(headerSplit, dimensionColumns);
+        if(dimensionHeaderIndex != null) {
+            int count =0;
+            for(int iterator =0 ; iterator< dimensionHeaderIndex.length ; iterator++) {
+                String line = reader.readLine();
+                while (line != null) {
+                    String[] data = line.split(",");
+                    set[count].add(data[dimensionHeaderIndex[iterator]]);
+                    line = reader.readLine();
+                }
+                count++;
+            }
+            }
+
+
+        /*Set<String>[] set = new HashSet[dims.size()];
+        for (int i = 0; i < set.length; i++) {
+            set[i] = new HashSet<>();
         }
         String line = reader.readLine();
         while (line != null) {
@@ -270,8 +315,9 @@ public class CarbondataStoreCreator {
                 set[i].add(data[i]);
             }
             line = reader.readLine();
-        }
+        }*/
 
+        // writeDictionaryToFile
         Cache<DictionaryColumnUniqueIdentifier, org.apache.carbondata.core.cache.dictionary.Dictionary> dictCache = CacheProvider.getInstance()
                 .createCache(CacheType.REVERSE_DICTIONARY, absoluteTableIdentifier.getStorePath());
         for (int i = 0; i < set.length; i++) {
@@ -286,6 +332,9 @@ public class CarbondataStoreCreator {
             writer.commit();
             org.apache.carbondata.core.cache.dictionary.Dictionary dict = dictCache.get(new DictionaryColumnUniqueIdentifier(absoluteTableIdentifier.getCarbonTableIdentifier(),
                     columnIdentifier, dims.get(i).getDataType()));
+
+
+            // SortIndexWriter
             CarbonDictionarySortInfoPreparator preparator = new CarbonDictionarySortInfoPreparator();
             List<String> newDistinctValues = new ArrayList<String>();
             CarbonDictionarySortInfo dictionarySortInfo = preparator.getDictionarySortInfo(newDistinctValues, dict, dims.get(i).getDataType());
@@ -319,8 +368,8 @@ public class CarbondataStoreCreator {
         CarbonProperties.getInstance().addProperty("high.cardinality.value", "100000");
         CarbonProperties.getInstance().addProperty("is.compressed.keyblock", "false");
         CarbonProperties.getInstance().addProperty("carbon.leaf.node.size", "120000");
-        CarbonProperties.getInstance()
-                .addProperty(CarbonCommonConstants.CARBON_DATE_FORMAT, "yyyy/MM/dd");
+        CarbonProperties.getInstance().addProperty(CarbonCommonConstants.CARBON_DATE_FORMAT, "yyyy/MM/dd");
+
 
         String graphPath =
                 outPutLoc + File.separator + loadModel.getDatabaseName() + File.separator + tableName

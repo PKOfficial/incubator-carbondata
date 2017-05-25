@@ -136,7 +136,7 @@ public class CarbonDataFlinkOutputFormat extends RichOutputFormat<Tuple2<Void, O
     public void close() throws IOException {
     }
 
-    static class CarbonDataOutputFormatBuilder {
+    public static class CarbonDataOutputFormatBuilder {
 
         private final CarbonDataFlinkOutputFormat format = new CarbonDataFlinkOutputFormat();
 

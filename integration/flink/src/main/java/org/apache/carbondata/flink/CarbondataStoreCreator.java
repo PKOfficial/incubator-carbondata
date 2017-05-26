@@ -66,7 +66,7 @@ import java.util.logging.Logger;
 
 public class CarbondataStoreCreator {
     private final static Logger LOGGER = Logger.getLogger(CarbondataStoreCreator.class.getName());
-
+    private final static String MAX_COLUMNS = "2000";
 
     public DataType convertType(String type) {
 
@@ -103,43 +103,39 @@ public class CarbondataStoreCreator {
 
             CarbonTable table = createTable(absoluteTableIdentifier, columnNames, columnTypes, dimensionColumns);
             writeDictionary(factFilePath, table, absoluteTableIdentifier, dimensionColumns);
-            CarbonDataLoadSchema schema = new CarbonDataLoadSchema(table);
-            CarbonLoadModel loadModel = new CarbonLoadModel();
-            loadModel.setCarbonDataLoadSchema(schema);
-            loadModel.setDatabaseName(absoluteTableIdentifier.getCarbonTableIdentifier().getDatabaseName());
-            loadModel.setTableName(absoluteTableIdentifier.getCarbonTableIdentifier().getTableName());
-            loadModel.setFactFilePath(factFilePath);
-            loadModel.setLoadMetadataDetails(new ArrayList<LoadMetadataDetails>());
-            loadModel.setStorePath(absoluteTableIdentifier.getStorePath());
-            loadModel.setDateFormat(null);
-            loadModel.setDefaultTimestampFormat(CarbonProperties.getInstance().getProperty(
-                    CarbonCommonConstants.CARBON_TIMESTAMP_FORMAT,
-                    CarbonCommonConstants.CARBON_TIMESTAMP_DEFAULT_FORMAT));
-            loadModel.setDefaultDateFormat(null);
-            loadModel
-                    .setSerializationNullFormat(
-                            TableOptionConstant.SERIALIZATION_NULL_FORMAT.getName() + "," + "\\N");
-            loadModel
-                    .setBadRecordsLoggerEnable(
-                            TableOptionConstant.BAD_RECORDS_LOGGER_ENABLE.getName() + "," + "false");
-            loadModel
-                    .setBadRecordsAction(
-                            TableOptionConstant.BAD_RECORDS_ACTION.getName() + "," + "FORCE");
-            loadModel
-                    .setIsEmptyDataBadRecord(
-                            DataLoadProcessorConstants.IS_EMPTY_DATA_BAD_RECORD + "," + "false");
-            loadModel.setCsvHeader(columnString);
-            loadModel.setCsvHeaderColumns(loadModel.getCsvHeader().split(","));
-            loadModel.setTaskNo("0");
-            loadModel.setSegmentId("0");
-            loadModel.setPartitionId("0");
-            loadModel.setFactTimeStamp(System.currentTimeMillis());
-            loadModel.setMaxColumns("2000");
+            CarbonLoadModel loadModel = initializeLoadModel(table, absoluteTableIdentifier, factFilePath, columnString);
             executeGraph(loadModel, absoluteTableIdentifier.getStorePath());
         } catch (Exception exception) {
             exception.printStackTrace();
         }
+    }
 
+    private CarbonLoadModel initializeLoadModel(CarbonTable table, AbsoluteTableIdentifier absoluteTableIdentifier, String factFilePath, String columnString) {
+        CarbonDataLoadSchema schema = new CarbonDataLoadSchema(table);
+        CarbonLoadModel loadModel = new CarbonLoadModel();
+        loadModel.setCarbonDataLoadSchema(schema);
+        loadModel.setDatabaseName(absoluteTableIdentifier.getCarbonTableIdentifier().getDatabaseName());
+        loadModel.setTableName(absoluteTableIdentifier.getCarbonTableIdentifier().getTableName());
+        loadModel.setFactFilePath(factFilePath);
+        loadModel.setLoadMetadataDetails(new ArrayList<LoadMetadataDetails>());
+        loadModel.setStorePath(absoluteTableIdentifier.getStorePath());
+        loadModel.setDateFormat(null);
+        loadModel.setDefaultTimestampFormat(CarbonProperties.getInstance().getProperty(
+                CarbonCommonConstants.CARBON_TIMESTAMP_FORMAT,
+                CarbonCommonConstants.CARBON_TIMESTAMP_DEFAULT_FORMAT));
+        loadModel.setDefaultDateFormat(null);
+        loadModel.setSerializationNullFormat(TableOptionConstant.SERIALIZATION_NULL_FORMAT.getName() + "," + "\\N");
+        loadModel.setBadRecordsLoggerEnable(TableOptionConstant.BAD_RECORDS_LOGGER_ENABLE.getName() + "," + "false");
+        loadModel.setBadRecordsAction(TableOptionConstant.BAD_RECORDS_ACTION.getName() + "," + "FORCE");
+        loadModel.setIsEmptyDataBadRecord(DataLoadProcessorConstants.IS_EMPTY_DATA_BAD_RECORD + "," + "false");
+        loadModel.setCsvHeader(columnString);
+        loadModel.setCsvHeaderColumns(loadModel.getCsvHeader().split(","));
+        loadModel.setTaskNo("0");
+        loadModel.setSegmentId("0");
+        loadModel.setPartitionId("0");
+        loadModel.setFactTimeStamp(System.currentTimeMillis());
+        loadModel.setMaxColumns(MAX_COLUMNS);
+        return loadModel;
     }
 
     private boolean isDimensionColumn(String[] dimensionColumns, String column) {
@@ -152,7 +148,7 @@ public class CarbondataStoreCreator {
     }
 
     private void setEncodings(ColumnSchema column, DataType type) {
-        switch(type.toString().toLowerCase()) {
+        switch (type.toString().toLowerCase()) {
             case "int":
             case "float":
             case "long":
@@ -179,19 +175,13 @@ public class CarbondataStoreCreator {
         }
     }
 
-
-    private CarbonTable createTable(AbsoluteTableIdentifier absoluteTableIdentifier, String[] columnNames, String[] columnTypes, String[] dimensionColumns) throws IOException {
+    private TableInfo configureTableInfo(AbsoluteTableIdentifier absoluteTableIdentifier, String[] columnNames, String[] columnTypes, String[] dimensionColumns) {
         TableInfo tableInfo = new TableInfo();
         tableInfo.setStorePath(absoluteTableIdentifier.getStorePath());
         tableInfo.setDatabaseName(absoluteTableIdentifier.getCarbonTableIdentifier().getDatabaseName());
         TableSchema tableSchema = new TableSchema();
         tableSchema.setTableName(absoluteTableIdentifier.getCarbonTableIdentifier().getTableName());
-        List<ColumnSchema> columnSchemas = new ArrayList<ColumnSchema>();
-        ArrayList<Encoding> encodings = new ArrayList<>();
-        encodings.add(Encoding.DICTIONARY);
-        encodings.add(Encoding.INVERTED_INDEX);
-
-        ArrayList<Encoding> emptyEncodings = new ArrayList<>();
+        List<ColumnSchema> columnSchemas = new ArrayList<>();
 
         for (int i = 0; i < columnNames.length; i++) {
             DataType type = convertType(columnTypes[i]);
@@ -203,8 +193,7 @@ public class CarbondataStoreCreator {
             column.setColumnUniqueId(UUID.randomUUID().toString());
             if (isDimensionColumn(dimensionColumns, colName)) {
                 column.setDimensionColumn(true);
-            }
-            else {
+            } else {
                 column.setDimensionColumn(false);
             }
             setEncodings(column, type);
@@ -223,19 +212,21 @@ public class CarbondataStoreCreator {
         tableInfo.setLastUpdatedTime(System.currentTimeMillis());
         tableInfo.setFactTable(tableSchema);
         tableInfo.setAggregateTableList(new ArrayList<TableSchema>());
+        return tableInfo;
+    }
 
+    private CarbonTable createTable(AbsoluteTableIdentifier absoluteTableIdentifier, String[] columnNames, String[] columnTypes, String[] dimensionColumns) throws IOException {
+        TableInfo tableInfo = configureTableInfo(absoluteTableIdentifier, columnNames, columnTypes, dimensionColumns);
         CarbonTablePath carbonTablePath = CarbonStorePath
                 .getCarbonTablePath(absoluteTableIdentifier.getStorePath(),
                         absoluteTableIdentifier.getCarbonTableIdentifier());
         String schemaFilePath = carbonTablePath.getSchemaFilePath();
         String schemaMetadataPath = CarbonTablePath.getFolderContainingFile(schemaFilePath);
         tableInfo.setMetaDataFilepath(schemaMetadataPath);
-        CarbonMetadata.getInstance().loadTableMetadata(tableInfo);
 
+        CarbonMetadata.getInstance().loadTableMetadata(tableInfo);
         SchemaConverter schemaConverter = new ThriftWrapperSchemaConverterImpl();
-        org.apache.carbondata.format.TableInfo thriftTableInfo = schemaConverter
-                .fromWrapperToExternalTableInfo(tableInfo, tableInfo.getDatabaseName(),
-                        tableInfo.getFactTable().getTableName());
+        org.apache.carbondata.format.TableInfo thriftTableInfo = schemaConverter.fromWrapperToExternalTableInfo(tableInfo, tableInfo.getDatabaseName(), tableInfo.getFactTable().getTableName());
         org.apache.carbondata.format.SchemaEvolutionEntry schemaEvolutionEntry =
                 new org.apache.carbondata.format.SchemaEvolutionEntry(tableInfo.getLastUpdatedTime());
         thriftTableInfo.getFact_table().getSchema_evolution().getSchema_evolution_history()
@@ -254,17 +245,17 @@ public class CarbondataStoreCreator {
     }
 
     private int[] getDimensionsHeadersIndex(String[] headerSplit, String[] dimensionColumns) {
-        if(headerSplit == null || dimensionColumns == null) {
+        if (headerSplit == null || dimensionColumns == null) {
             LOGGER.log(Level.WARNING, "Either of dimension Columns or headers is null");
             return null;
         } else {
-            int [] dimensionIndexValues = new int[dimensionColumns.length];
+            int[] dimensionIndexValues = new int[dimensionColumns.length];
             int count = 0;
 
-            for(int dimColumnIndex = 0 ; dimColumnIndex < dimensionColumns.length; dimColumnIndex++) {
+            for (int dimColumnIndex = 0; dimColumnIndex < dimensionColumns.length; dimColumnIndex++) {
                 String dimColumn = dimensionColumns[dimColumnIndex];
-                for(int headerIndex = 0 ; headerIndex < headerSplit.length ; headerIndex++){
-                    if(dimColumn.equals(headerSplit[headerIndex])){
+                for (int headerIndex = 0; headerIndex < headerSplit.length; headerIndex++) {
+                    if (dimColumn.equals(headerSplit[headerIndex])) {
                         dimensionIndexValues[count++] = headerIndex;
                     }
                 }
@@ -273,26 +264,19 @@ public class CarbondataStoreCreator {
         }
     }
 
-
-    private void writeDictionary(String factFilePath, CarbonTable table, AbsoluteTableIdentifier absoluteTableIdentifier, String[] dimensionColumns) throws Exception {
-        BufferedReader reader = new BufferedReader(new FileReader(factFilePath));
+    private Set<String>[] createDimensionDataSet(List<CarbonDimension> dimensions, String[] dimensionColumns, BufferedReader reader, String factFilePath) throws IOException {
         String header = reader.readLine();
         String[] headerSplit = header.split(",");
-        List<CarbonColumn> allCols = new ArrayList<CarbonColumn>();
-        List<CarbonDimension> dims = table.getDimensionByTableName(table.getFactTableName());
-        allCols.addAll(dims);
-        List<CarbonMeasure> msrs = table.getMeasureByTableName(table.getFactTableName());
-        allCols.addAll(msrs);
 
-        Set<String>[] set = new HashSet[dims.size()];
+        Set<String>[] set = new HashSet[dimensions.size()];
         for (int i = 0; i < set.length; i++) {
             set[i] = new HashSet<>();
         }
 
         int[] dimensionHeaderIndex = getDimensionsHeadersIndex(headerSplit, dimensionColumns);
-        if(dimensionHeaderIndex != null) {
-            int count =0;
-            for(int iterator =0 ; iterator< dimensionHeaderIndex.length ; iterator++) {
+        if (dimensionHeaderIndex != null) {
+            int count = 0;
+            for (int iterator = 0; iterator < dimensionHeaderIndex.length; iterator++) {
                 String line = reader.readLine();
                 while (line != null) {
                     String[] data = line.split(",");
@@ -300,65 +284,121 @@ public class CarbondataStoreCreator {
                     line = reader.readLine();
                 }
                 count++;
+                reader = new BufferedReader(new FileReader(factFilePath));
             }
-            }
-
-
-        /*Set<String>[] set = new HashSet[dims.size()];
-        for (int i = 0; i < set.length; i++) {
-            set[i] = new HashSet<>();
         }
-        String line = reader.readLine();
-        while (line != null) {
-            String[] data = line.split(",");
-            for (int i = 0; i < set.length; i++) {
-                set[i].add(data[i]);
-            }
-            line = reader.readLine();
-        }*/
+        return set;
+    }
+
+    private void writeSortIndex(AbsoluteTableIdentifier absoluteTableIdentifier, ColumnIdentifier columnIdentifier,
+                                DataType dimensionDatatype) throws IOException {
+        Cache<DictionaryColumnUniqueIdentifier, org.apache.carbondata.core.cache.dictionary.Dictionary> dictCache =
+                CacheProvider.getInstance().createCache(CacheType.REVERSE_DICTIONARY,
+                        absoluteTableIdentifier.getStorePath());
+        org.apache.carbondata.core.cache.dictionary.Dictionary dict = dictCache.get(new DictionaryColumnUniqueIdentifier(absoluteTableIdentifier.getCarbonTableIdentifier(),
+                columnIdentifier, dimensionDatatype));
+        CarbonDictionarySortInfoPreparator preparator = new CarbonDictionarySortInfoPreparator();
+        List<String> newDistinctValues = new ArrayList<>();
+        CarbonDictionarySortInfo dictionarySortInfo = preparator.getDictionarySortInfo(newDistinctValues, dict,
+                dimensionDatatype);
+        CarbonDictionarySortIndexWriter carbonDictionaryWriter = new CarbonDictionarySortIndexWriterImpl(
+                absoluteTableIdentifier.getCarbonTableIdentifier(), columnIdentifier,
+                absoluteTableIdentifier.getStorePath());
+        try {
+            carbonDictionaryWriter.writeSortIndex(dictionarySortInfo.getSortIndex());
+            carbonDictionaryWriter.writeInvertedSortIndex(dictionarySortInfo.getSortIndexInverted());
+        } finally {
+            carbonDictionaryWriter.close();
+        }
+    }
+
+
+    private void writeDictionary(String factFilePath, CarbonTable table, AbsoluteTableIdentifier absoluteTableIdentifier, String[] dimensionColumns) throws Exception {
+        BufferedReader reader = new BufferedReader(new FileReader(factFilePath));
+        List<CarbonColumn> allCols = new ArrayList<CarbonColumn>();
+        List<CarbonDimension> dimensions = table.getDimensionByTableName(table.getFactTableName());
+        allCols.addAll(dimensions);
+        List<CarbonMeasure> measures = table.getMeasureByTableName(table.getFactTableName());
+        allCols.addAll(measures);
+        Set<String>[] dimensionSet = createDimensionDataSet(dimensions, dimensionColumns, reader, factFilePath);
 
         // writeDictionaryToFile
-        Cache<DictionaryColumnUniqueIdentifier, org.apache.carbondata.core.cache.dictionary.Dictionary> dictCache = CacheProvider.getInstance()
-                .createCache(CacheType.REVERSE_DICTIONARY, absoluteTableIdentifier.getStorePath());
-        for (int i = 0; i < set.length; i++) {
-            ColumnIdentifier columnIdentifier = new ColumnIdentifier(dims.get(i).getColumnId(), null, null);
-            CarbonDictionaryWriter writer =
-                    new CarbonDictionaryWriterImpl(absoluteTableIdentifier.getStorePath(),
+        for (int i = 0; i < dimensionSet.length; i++) {
+            ColumnIdentifier columnIdentifier = new ColumnIdentifier(dimensions.get(i).getColumnId(), null, null);
+            CarbonDictionaryWriter writer = new CarbonDictionaryWriterImpl(absoluteTableIdentifier.getStorePath(),
                             absoluteTableIdentifier.getCarbonTableIdentifier(), columnIdentifier);
-            for (String value : set[i]) {
+            for (String value : dimensionSet[i]) {
                 writer.write(value);
             }
             writer.close();
             writer.commit();
-            org.apache.carbondata.core.cache.dictionary.Dictionary dict = dictCache.get(new DictionaryColumnUniqueIdentifier(absoluteTableIdentifier.getCarbonTableIdentifier(),
-                    columnIdentifier, dims.get(i).getDataType()));
-
 
             // SortIndexWriter
-            CarbonDictionarySortInfoPreparator preparator = new CarbonDictionarySortInfoPreparator();
-            List<String> newDistinctValues = new ArrayList<String>();
-            CarbonDictionarySortInfo dictionarySortInfo = preparator.getDictionarySortInfo(newDistinctValues, dict, dims.get(i).getDataType());
-            CarbonDictionarySortIndexWriter carbonDictionaryWriter = new CarbonDictionarySortIndexWriterImpl(
-                            absoluteTableIdentifier.getCarbonTableIdentifier(), columnIdentifier,
-                            absoluteTableIdentifier.getStorePath());
-            try {
-                carbonDictionaryWriter.writeSortIndex(dictionarySortInfo.getSortIndex());
-                carbonDictionaryWriter.writeInvertedSortIndex(dictionarySortInfo.getSortIndexInverted());
-            } finally {
-                carbonDictionaryWriter.close();
-            }
+          DataType dimensionDatatype = dimensions.get(i).getDataType();
+          writeSortIndex(absoluteTableIdentifier, columnIdentifier, dimensionDatatype);
         }
         reader.close();
     }
 
     public void executeGraph(CarbonLoadModel loadModel, String storeLocation) throws Exception {
-//        new File(storeLocation).mkdirs();
         String outPutLoc = storeLocation + "/etl";
         String databaseName = loadModel.getDatabaseName();
         String tableName = loadModel.getTableName();
+        addCarbonProperties(databaseName, tableName, storeLocation, outPutLoc);
+        String graphPath = outPutLoc + File.separator + loadModel.getDatabaseName() + File.separator + tableName
+                        + File.separator + 0 + File.separator + 1 + File.separator + tableName + ".ktr";
+        File path = new File(graphPath);
+        if (path.exists()) {
+            path.delete();
+        }
+
+        SchemaInfo info = new SchemaInfo();
+        BlockDetails blockDetails = new BlockDetails(new Path(loadModel.getFactFilePath()),
+                0, new File(loadModel.getFactFilePath()).length(), new String[]{"localhost"});
+        Configuration configuration = new Configuration();
+        CSVInputFormat format = getCsvInputFormat(configuration, loadModel);
+
+        TaskAttemptContextImpl hadoopAttemptContext = new TaskAttemptContextImpl(configuration, new TaskAttemptID("", 1, TaskType.MAP, 0, 0));
+
+        RecordReader<NullWritable, StringArrayWritable> recordReader = format.createRecordReader(blockDetails, hadoopAttemptContext);
+
+        CSVRecordReaderIterator readerIterator = new CSVRecordReaderIterator(recordReader, blockDetails, hadoopAttemptContext);
+        FileFactory.FileType storeFileType = FileFactory.getFileType(storeLocation);
+
+        if (storeFileType.equals(FileFactory.FileType.HDFS)) {
+            new DataLoadExecutor().execute(loadModel,
+                    "/tmp" + '/' + System.nanoTime(),                                    //tmp location
+                    new CarbonIterator[]{readerIterator});
+        } else {
+            new DataLoadExecutor().execute(loadModel, storeLocation, new CarbonIterator[]{readerIterator});
+        }
+
+        info.setDatabaseName(databaseName);
+        info.setTableName(tableName);
+        writeLoadMetadata(loadModel.getCarbonDataLoadSchema(), new ArrayList<LoadMetadataDetails>());
+        performFactFilesRenamingAndCleanUp(storeFileType, storeLocation, databaseName, tableName);
+
+    }
+
+    private CSVInputFormat getCsvInputFormat(Configuration configuration, CarbonLoadModel loadModel) {
+        CSVInputFormat.setCommentCharacter(configuration, loadModel.getCommentChar());
+        CSVInputFormat.setCSVDelimiter(configuration, loadModel.getCsvDelimiter());
+        CSVInputFormat.setEscapeCharacter(configuration, loadModel.getEscapeChar());
+        CSVInputFormat.setHeaderExtractionEnabled(configuration, true);
+        CSVInputFormat.setQuoteCharacter(configuration, loadModel.getQuoteChar());
+        CSVInputFormat.setReadBufferSize(configuration, CarbonProperties.getInstance()
+                .getProperty(CarbonCommonConstants.CSV_READ_BUFFER_SIZE,
+                        CarbonCommonConstants.CSV_READ_BUFFER_SIZE_DEFAULT));
+        CSVInputFormat.setNumberOfColumns(configuration, String.valueOf(loadModel.getCsvHeaderColumns().length));
+        CSVInputFormat.setMaxColumns(configuration, MAX_COLUMNS);
+        CSVInputFormat format = new CSVInputFormat();
+        return format;
+    }
+
+    private void addCarbonProperties(String databaseName, String tableName, String storeLocation, String outputLoc) {
         String tempLocationKey = databaseName + '_' + tableName + "_1";
         CarbonProperties.getInstance().addProperty(tempLocationKey, storeLocation);
-        CarbonProperties.getInstance().addProperty("store_output_location", outPutLoc);
+        CarbonProperties.getInstance().addProperty("store_output_location", outputLoc);
         CarbonProperties.getInstance().addProperty("send.signal.load", "false");
         CarbonProperties.getInstance().addProperty("carbon.is.columnar.storage", "true");
         CarbonProperties.getInstance().addProperty("carbon.dimension.split.value.in.columnar", "1");
@@ -369,58 +409,11 @@ public class CarbondataStoreCreator {
         CarbonProperties.getInstance().addProperty("is.compressed.keyblock", "false");
         CarbonProperties.getInstance().addProperty("carbon.leaf.node.size", "120000");
         CarbonProperties.getInstance().addProperty(CarbonCommonConstants.CARBON_DATE_FORMAT, "yyyy/MM/dd");
+    }
 
-
-        String graphPath =
-                outPutLoc + File.separator + loadModel.getDatabaseName() + File.separator + tableName
-                        + File.separator + 0 + File.separator + 1 + File.separator + tableName + ".ktr";
-        File path = new File(graphPath);
-        if (path.exists()) {
-            path.delete();
-        }
-
-        SchemaInfo info = new SchemaInfo();
-
-        BlockDetails blockDetails = new BlockDetails(new Path(loadModel.getFactFilePath()),
-                0, new File(loadModel.getFactFilePath()).length(), new String[]{"localhost"});
-        Configuration configuration = new Configuration();
-        CSVInputFormat.setCommentCharacter(configuration, loadModel.getCommentChar());
-        CSVInputFormat.setCSVDelimiter(configuration, loadModel.getCsvDelimiter());
-        CSVInputFormat.setEscapeCharacter(configuration, loadModel.getEscapeChar());
-        CSVInputFormat.setHeaderExtractionEnabled(configuration, true);
-        CSVInputFormat.setQuoteCharacter(configuration, loadModel.getQuoteChar());
-        CSVInputFormat.setReadBufferSize(configuration, CarbonProperties.getInstance()
-                .getProperty(CarbonCommonConstants.CSV_READ_BUFFER_SIZE,
-                        CarbonCommonConstants.CSV_READ_BUFFER_SIZE_DEFAULT));
-        CSVInputFormat.setNumberOfColumns(configuration, String.valueOf(loadModel.getCsvHeaderColumns().length));
-        CSVInputFormat.setMaxColumns(configuration, "10");
-
-        TaskAttemptContextImpl hadoopAttemptContext = new TaskAttemptContextImpl(configuration, new TaskAttemptID("", 1, TaskType.MAP, 0, 0));
-        CSVInputFormat format = new CSVInputFormat();
-
-        RecordReader<NullWritable, StringArrayWritable> recordReader =
-                format.createRecordReader(blockDetails, hadoopAttemptContext);
-
-        CSVRecordReaderIterator readerIterator = new CSVRecordReaderIterator(recordReader, blockDetails, hadoopAttemptContext);
-
-        FileFactory.FileType storeFileType = FileFactory.getFileType(storeLocation);
-
-        if(storeFileType.equals(FileFactory.FileType.HDFS)){
-            new DataLoadExecutor().execute(loadModel,
-                    "/tmp" + '/' + System.nanoTime(),                                    //tmp location
-                    new CarbonIterator[]{readerIterator});
-        } else {
-            new DataLoadExecutor().execute(loadModel,
-                    storeLocation,
-                    new CarbonIterator[]{readerIterator});
-        }
-
-        info.setDatabaseName(databaseName);
-        info.setTableName(tableName);
-
-        writeLoadMetadata(loadModel.getCarbonDataLoadSchema(), new ArrayList<LoadMetadataDetails>());
-
-        if(storeFileType.equals(FileFactory.FileType.LOCAL)) {
+    private void performFactFilesRenamingAndCleanUp(FileFactory.FileType storeFileType, String storeLocation,
+                                                    String databaseName, String tableName) throws IOException, InterruptedException {
+        if (storeFileType.equals(FileFactory.FileType.LOCAL)) {
             String segLocation = storeLocation + "/" + databaseName + "/" + tableName + "/Fact/Part0/Segment_0";
             File file = new File(segLocation);
             File factFile = null;

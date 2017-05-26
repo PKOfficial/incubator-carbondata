@@ -87,6 +87,7 @@ public class CarbondataStoreCreator {
                 return DataType.DATE;
             case "boolean":
                 return DataType.BOOLEAN;
+            case "bigint":
             case "long":
                 return DataType.LONG;
             default:
@@ -167,6 +168,7 @@ public class CarbondataStoreCreator {
                 column.setEncodingList(encodings);
                 break;
             case "date":
+            case "timestamp":
                 ArrayList<Encoding> dateEncodings = new ArrayList<>();
                 dateEncodings.add(Encoding.DICTIONARY);
                 dateEncodings.add(Encoding.DIRECT_DICTIONARY);
@@ -300,22 +302,9 @@ public class CarbondataStoreCreator {
                     line = reader.readLine();
                 }
                 count++;
+                reader = new BufferedReader(new FileReader(factFilePath));
             }
             }
-
-
-        /*Set<String>[] set = new HashSet[dims.size()];
-        for (int i = 0; i < set.length; i++) {
-            set[i] = new HashSet<>();
-        }
-        String line = reader.readLine();
-        while (line != null) {
-            String[] data = line.split(",");
-            for (int i = 0; i < set.length; i++) {
-                set[i].add(data[i]);
-            }
-            line = reader.readLine();
-        }*/
 
         // writeDictionaryToFile
         Cache<DictionaryColumnUniqueIdentifier, org.apache.carbondata.core.cache.dictionary.Dictionary> dictCache = CacheProvider.getInstance()

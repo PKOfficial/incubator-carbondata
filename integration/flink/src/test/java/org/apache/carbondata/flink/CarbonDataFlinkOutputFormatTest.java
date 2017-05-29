@@ -102,6 +102,41 @@ public class CarbonDataFlinkOutputFormatTest {
         Assert.assertEquals(writeCount, recordCount);
     }
 
+    //testing timestamp
+
+    @Test
+    public void testOutputFormatForDatatypes() throws Exception {
+
+        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+        String[] columns = {"CUST_ID", "CUST_NAME", "ACTIVE_EMUI_VERSION", "DOB", "DOJ", "BIGINT_COLUMN1", "BIGINT_COLUMN2", "Double_COLUMN1", "Double_COLUMN2", "INTEGER_COLUMN1"};
+        String path = "/integration/flink/target/store-input/default/uniqdata_100";
+        CarbonDataFlinkInputFormat carbondataFlinkInputFormat = new CarbonDataFlinkInputFormat(getRootPath() + path, columns, false);
+
+        DataSet<Tuple2<Void, Object[]>> dataSource = env.createInput(carbondataFlinkInputFormat.getInputFormat());
+        long recordCount = dataSource.count();
+        System.out.println("Read count::::::"+recordCount);
+
+        String[] columnTypes = {"Int", "String", "String", "timestamp", "timestamp", "bigint", "bigint","double","double","Int"};
+        String[] columnHeaders = {"CUST_ID", "CUST_NAME", "ACTIVE_EMUI_VERSION", "DOB", "DOJ", "BIGINT_COLUMN1", "BIGINT_COLUMN2", "Double_COLUMN1", "Double_COLUMN2", "INTEGER_COLUMN1"};
+        String[] dimensionColumns = {"CUST_NAME", "ACTIVE_EMUI_VERSION", "DOB", "DOJ"};
+
+        CarbonDataFlinkOutputFormat.CarbonDataOutputFormatBuilder outputFormat =
+                CarbonDataFlinkOutputFormat.buildCarbonDataOutputFormat()
+                        .setColumnNames(columnHeaders)
+                        .setColumnTypes(columnTypes)
+                        .setStorePath(getRootPath() + "/integration/flink/target/store")
+                        .setDatabaseName("default")
+                        .setTableName("timestampTable")
+                        .setRecordCount(recordCount)
+                        .setDimensionColumns(dimensionColumns);
+
+        dataSource.output(outputFormat.finish());
+        env.execute();
+        long writeCount = CarbonDataFlinkOutputFormat.getWriteCount();
+        System.out.println("Write count::::::"+writeCount);
+        Assert.assertEquals(writeCount, recordCount);
+    }
+
     @Test
     public void testOutputFormatForWrongColumns() throws Exception {
 

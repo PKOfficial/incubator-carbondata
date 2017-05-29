@@ -107,7 +107,7 @@ public class CarbonDataFlinkOutputFormat extends RichOutputFormat<Tuple2<Void, O
                     bufferedWriter.write(columnString + "\n");
 
                     for (Tuple2<Void, Object[]> element : records) {
-                        String row = (element.toString().substring(7, element.toString().length() - 2)).replace(" ", "");
+                        String row = (element.toString().substring(7, element.toString().length() - 2)).replace(", ", ",");
                         bufferedWriter.write(row + "\n");
                     }
                 } catch (IOException ioException) {

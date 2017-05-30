@@ -137,6 +137,38 @@ public class CarbonDataFlinkOutputFormatTest {
         Assert.assertEquals(writeCount, recordCount);
     }
 
+    //testing float datatype
+    @Test
+    public void testOutputFormatForFloatDatatype() throws Exception {
+
+        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+        String[] columns = {"ID","name","floatField"};
+        String path = "/integration/flink/target/store-input/default/flinktable";
+        CarbonDataFlinkInputFormat carbondataFlinkInputFormat = new CarbonDataFlinkInputFormat(getRootPath() + path, columns, false);
+
+        DataSet<Tuple2<Void, Object[]>> dataSource = env.createInput(carbondataFlinkInputFormat.getInputFormat());
+        long recordCount = dataSource.count();
+
+        String[] columnTypes = {"Int", "String", "float"};
+        String[] columnHeaders = {"ID","name","floatField"};
+        String[] dimensionColumns = {"name"};
+
+        CarbonDataFlinkOutputFormat.CarbonDataOutputFormatBuilder outputFormat =
+                CarbonDataFlinkOutputFormat.buildCarbonDataOutputFormat()
+                        .setColumnNames(columnHeaders)
+                        .setColumnTypes(columnTypes)
+                        .setStorePath(getRootPath() + "/integration/flink/target/store")
+                        .setDatabaseName("default")
+                        .setTableName("floatTable")
+                        .setRecordCount(recordCount)
+                        .setDimensionColumns(dimensionColumns);
+
+        dataSource.output(outputFormat.finish());
+        env.execute();
+        long writeCount = CarbonDataFlinkOutputFormat.getWriteCount();
+        Assert.assertEquals(writeCount, recordCount);
+    }
+
     @Test
     public void testOutputFormatForWrongColumns() throws Exception {
 

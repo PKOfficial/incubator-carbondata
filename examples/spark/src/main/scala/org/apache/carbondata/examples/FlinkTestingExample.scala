@@ -8,25 +8,25 @@ object FlinkTestingExample {
 
   def main(args: Array[String]) {
     val cc = ExampleUtils.createCarbonContext("FlinkExampleTest")
-    val testData = "/home/sangeeta/projects/contribute/incubator-carbondata/integration/flink/src/test/resources/record1.csv"
+    val testData = "/home/knoldus/Desktop/flink-PK/incubator-carbondata/integration/flink/src/test/resources/record1.csv"
 
     CarbonProperties.getInstance()
       .addProperty(CarbonCommonConstants.CARBON_DATE_FORMAT, "yyyy/MM/dd")
-    cc.sql("DROP TABLE IF EXISTS flinkTable")
+    cc.sql("DROP TABLE IF EXISTS FlinkTable")
 
     cc.sql(
       """
-             CREATE TABLE IF NOT EXISTS flinkTable (ID Int, date Date, timestampField timestamp) STORED BY 'carbondata'
+             CREATE TABLE IF NOT EXISTS FlinkTable (ID Int,name String,floatField float) STORED BY 'carbondata'
       """)
 
     cc.sql(
       s"""
-              LOAD DATA LOCAL INPATH '$testData' into table flinkTable
+              LOAD DATA LOCAL INPATH '$testData' into table FlinkTable
            """)
 
     cc.sql(
       s"""
-         select * from flinkTable
+         select * from FlinkTable
        """).show()
   }
 

@@ -73,6 +73,7 @@ public class CarbondataStoreCreator {
         switch (type.toLowerCase()) {
             case "int":
                 return DataType.INT;
+            case "char":
             case "string":
                 return DataType.STRING;
             case "double":
@@ -157,6 +158,7 @@ public class CarbondataStoreCreator {
                 ArrayList<Encoding> emptyEncodings = new ArrayList<>();
                 column.setEncodingList(emptyEncodings);
                 break;
+            case "char":
             case "string":
                 ArrayList<Encoding> encodings = new ArrayList<>();
                 encodings.add(Encoding.DICTIONARY);

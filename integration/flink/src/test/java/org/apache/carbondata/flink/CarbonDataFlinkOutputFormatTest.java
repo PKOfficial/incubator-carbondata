@@ -169,6 +169,40 @@ public class CarbonDataFlinkOutputFormatTest {
         Assert.assertEquals(writeCount, recordCount);
     }
 
+    //Testing char datatype
+
+    @Test
+    public void testOutputFormatForCharDatatype() throws Exception {
+
+        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+        String[] columns = {"ID","charField"};
+        String path = "/examples/spark/target/store/default/flinktablechar";
+        CarbonDataFlinkInputFormat carbondataFlinkInputFormat = new CarbonDataFlinkInputFormat(getRootPath() + path, columns, false);
+
+        DataSet<Tuple2<Void, Object[]>> dataSource = env.createInput(carbondataFlinkInputFormat.getInputFormat());
+        long recordCount = dataSource.count();
+
+        String[] columnTypes = {"Int","char"};
+        String[] columnHeaders = {"ID","charField"};
+        String[] dimensionColumns = {"charField"};
+
+        CarbonDataFlinkOutputFormat.CarbonDataOutputFormatBuilder outputFormat =
+                CarbonDataFlinkOutputFormat.buildCarbonDataOutputFormat()
+                        .setColumnNames(columnHeaders)
+                        .setColumnTypes(columnTypes)
+                        .setStorePath(getRootPath() + "/integration/flink/target/store")
+                        .setDatabaseName("default")
+                        .setTableName("charTable")
+                        .setRecordCount(recordCount)
+                        .setDimensionColumns(dimensionColumns);
+
+        dataSource.output(outputFormat.finish());
+        env.execute();
+        long writeCount = CarbonDataFlinkOutputFormat.getWriteCount();
+        Assert.assertEquals(writeCount, recordCount);
+    }
+
+
     @Test
     public void testOutputFormatForWrongColumns() throws Exception {
 

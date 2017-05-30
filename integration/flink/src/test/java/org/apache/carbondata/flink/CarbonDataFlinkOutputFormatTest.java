@@ -560,5 +560,4 @@ public class CarbonDataFlinkOutputFormatTest {
             assert true;
         }
     }
-
 }

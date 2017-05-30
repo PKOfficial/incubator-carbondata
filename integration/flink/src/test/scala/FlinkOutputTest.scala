@@ -28,7 +28,7 @@
 //  private def getRootPath = new File(classOf[FlinkOutputTest].getResource("/").getPath + "../../../..").getCanonicalPath
 //
 //  // Input format reading from resources source
-//  @Test
+//  /*@Test
 //  @throws[Exception]
 //  def getDataFromCarbonLocal() {
 //    val zipPath = getRootPath + "/integration/flink/src/test/resources/store-input.zip"
@@ -259,5 +259,53 @@
 //    System.out.println("\n\nRecords Read: " + rowCount)
 //    assert(rowCount == 10)
 //  }
+//  */
+//
+//  // Reading from resource and writing to carbon on hdfs
+//  @Test
+//  @throws[Exception]
+//  def testOutputFormatWithProjectionDateAndTimeStamp() {
+//    val environment = ExecutionEnvironment.getExecutionEnvironment
+//    val columns = Array("name", "decimalField")
+//    //        val path = "/integration/flink/target/store-input/testdb/testtable"
+//    val path = "/examples/spark/target/store/default/flinktable"
+//    val carbondataFlinkInputFormat = new CarbonDataFlinkInputFormat(getRootPath + path, columns, false)
+//    val dataSource = environment.createInput(carbondataFlinkInputFormat.getInputFormat)
+//    val recordCount = dataSource.count
+//
+//    val columnTypes = Array("String", "Decimal(30,10)")
+//    val columnHeaders = Array("name", "decimalField")
+//    val dimensionColumns = Array("name")
+//    val outputFormat = CarbonDataFlinkOutputFormat.buildCarbonDataOutputFormat
+//      .setColumnNames(columnHeaders)
+//      .setColumnTypes(columnTypes)
+//      .setStorePath(getRootPath + "/integration/flink/target/store")
+//      .setDatabaseName("default")
+//      .setTableName("mytableDateTimestampDecimal")
+//      .setRecordCount(recordCount)
+//      .setDimensionColumns(dimensionColumns)
+//    dataSource.output(outputFormat.finish)
+//    environment.execute
+//    val writeCount = CarbonDataFlinkOutputFormat.getWriteCount
+//    assert(writeCount == recordCount)
+//  }
+//
+//  @Test
+//  @throws[Exception]
+//  def getDataFromSparksLocalAllType() {
+//    val env = ExecutionEnvironment.getExecutionEnvironment
+//    val columns = Array("name", "decimalField")
+//    val carbondataFlinkInputFormat = new CarbonDataFlinkInputFormat("/home/sangeeta/projects/contribute/incubator-carbondata/integration/flink/target/store/default/mytableDateTimestampDecimal", columns, false)
+//    val dataSource = env.createInput(carbondataFlinkInputFormat.getInputFormat)
+//    val rowCount = dataSource.collect.size
+//    val records = dataSource.collect
+//    import scala.collection.JavaConversions._
+//    for (record <- records) {
+//      System.out.println(record.f1.mkString(","))
+//    }
+//    System.out.println("\n\nRecords Read: " + rowCount)
+//    assert(rowCount == 10)
+//  }
+//
 //
 //}

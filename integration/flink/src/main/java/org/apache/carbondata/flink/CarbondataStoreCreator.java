@@ -67,9 +67,10 @@ import java.util.logging.Logger;
 public class CarbondataStoreCreator {
     private final static Logger LOGGER = Logger.getLogger(CarbondataStoreCreator.class.getName());
     private final static String MAX_COLUMNS = "2000";
+    private static int DECIMAL_SCALE = 10;
+    private static int DECIMAL_PRECISION = 10;
 
-    public DataType convertType(String type) {
-
+    public DataType convertType(String type) throws Exception {
         switch (type.toLowerCase()) {
             case "int":
                 return DataType.INT;
@@ -82,8 +83,6 @@ public class CarbondataStoreCreator {
                 return DataType.DOUBLE;
             case "timestamp":
                 return DataType.TIMESTAMP;
-            case "decimal":
-                return DataType.DECIMAL;
             case "date":
                 return DataType.DATE;
             case "boolean":
@@ -92,7 +91,20 @@ public class CarbondataStoreCreator {
             case "long":
                 return DataType.LONG;
             default:
-                return DataType.NULL;
+                if(type.toLowerCase().startsWith("decimal")) {
+                    try {
+                        String precisionAndScaleStr = type.toLowerCase().substring(8, type.length() - 1);
+                        System.out.println("\n\n\n" + precisionAndScaleStr);
+                        String[] precisionAndScale = precisionAndScaleStr.split(",");
+                        DECIMAL_PRECISION = Integer.parseInt(precisionAndScale[0]);
+                        DECIMAL_SCALE = Integer.parseInt(precisionAndScale[1]);
+                    } catch (ArrayIndexOutOfBoundsException exception) {
+                        throw new Exception("Decimal Scale or precision is not specified");
+                    }
+                    return DataType.DECIMAL;
+                }else {
+                    return DataType.NULL;
+                }
         }
     }
 
@@ -128,7 +140,7 @@ public class CarbondataStoreCreator {
         loadModel.setDefaultDateFormat(null);
         loadModel.setSerializationNullFormat(TableOptionConstant.SERIALIZATION_NULL_FORMAT.getName() + "," + "\\N");
         loadModel.setBadRecordsLoggerEnable(TableOptionConstant.BAD_RECORDS_LOGGER_ENABLE.getName() + "," + "false");
-        loadModel.setBadRecordsAction(TableOptionConstant.BAD_RECORDS_ACTION.getName() + "," + "FORCE");
+        loadModel.setBadRecordsAction(TableOptionConstant.BAD_RECORDS_ACTION.getName() + "," + "FAIL");
         loadModel.setIsEmptyDataBadRecord(DataLoadProcessorConstants.IS_EMPTY_DATA_BAD_RECORD + "," + "false");
         loadModel.setCsvHeader(columnString);
         loadModel.setCsvHeaderColumns(loadModel.getCsvHeader().split(","));
@@ -179,7 +191,7 @@ public class CarbondataStoreCreator {
         }
     }
 
-    private TableInfo configureTableInfo(AbsoluteTableIdentifier absoluteTableIdentifier, String[] columnNames, String[] columnTypes, String[] dimensionColumns) {
+    private TableInfo configureTableInfo(AbsoluteTableIdentifier absoluteTableIdentifier, String[] columnNames, String[] columnTypes, String[] dimensionColumns) throws Exception {
         TableInfo tableInfo = new TableInfo();
         tableInfo.setStorePath(absoluteTableIdentifier.getStorePath());
         tableInfo.setDatabaseName(absoluteTableIdentifier.getCarbonTableIdentifier().getDatabaseName());
@@ -200,6 +212,10 @@ public class CarbondataStoreCreator {
             } else {
                 column.setDimensionColumn(false);
             }
+            if(column.getDataType() == org.apache.carbondata.core.metadata.datatype.DataType.DECIMAL) {
+                column.setPrecision(DECIMAL_PRECISION);
+                column.setScale(DECIMAL_SCALE);
+            }
             setEncodings(column, type);
             column.setColumnGroup(i + 1);
             columnSchemas.add(column);
@@ -219,7 +235,7 @@ public class CarbondataStoreCreator {
         return tableInfo;
     }
 
-    private CarbonTable createTable(AbsoluteTableIdentifier absoluteTableIdentifier, String[] columnNames, String[] columnTypes, String[] dimensionColumns) throws IOException {
+    private CarbonTable createTable(AbsoluteTableIdentifier absoluteTableIdentifier, String[] columnNames, String[] columnTypes, String[] dimensionColumns) throws Exception {
         TableInfo tableInfo = configureTableInfo(absoluteTableIdentifier, columnNames, columnTypes, dimensionColumns);
         CarbonTablePath carbonTablePath = CarbonStorePath
                 .getCarbonTablePath(absoluteTableIdentifier.getStorePath(),
@@ -316,6 +332,9 @@ public class CarbondataStoreCreator {
         }
     }
 
+    private void addDecimalScaleAndPrecision(CarbonColumn dimensionValue, String dataType) {
+
+    }
 
     private void writeDictionary(String factFilePath, CarbonTable table, AbsoluteTableIdentifier absoluteTableIdentifier, String[] dimensionColumns) throws Exception {
         BufferedReader reader = new BufferedReader(new FileReader(factFilePath));
@@ -381,7 +400,6 @@ public class CarbondataStoreCreator {
         info.setTableName(tableName);
         writeLoadMetadata(loadModel.getCarbonDataLoadSchema(), new ArrayList<LoadMetadataDetails>());
         performFactFilesRenamingAndCleanUp(storeFileType, storeLocation, databaseName, tableName);
-
     }
 
     private CSVInputFormat getCsvInputFormat(Configuration configuration, CarbonLoadModel loadModel) {

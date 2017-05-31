@@ -68,7 +68,7 @@ public class CarbondataStoreCreator {
     private final static Logger LOGGER = Logger.getLogger(CarbondataStoreCreator.class.getName());
     private final static String MAX_COLUMNS = "2000";
     private static int DECIMAL_SCALE = 10;
-    private static int DECIMAL_PRECISION = 10;
+    private static int DECIMAL_PRECISION = 20;
 
     public DataType convertType(String type) throws Exception {
         switch (type.toLowerCase()) {

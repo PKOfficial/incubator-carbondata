@@ -72,7 +72,6 @@ public class CarbonDataFlinkOutputFormatTest {
     }
 
     @Test
-
     public void testOutputFormatForSelectAll() throws Exception {
         ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
         String[] columns = {"ID", "date", "country", "name", "phonetype", "serialname", "salary"};

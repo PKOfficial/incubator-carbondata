@@ -1,5 +1,6 @@
 package org.apache.carbondata.flink.utils;
 
+import org.apache.carbondata.core.constants.CarbonCommonConstants;
 import org.apache.carbondata.core.util.CarbonProperties;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
@@ -17,24 +18,27 @@ public class FlinkTestUtils {
         return new File(FlinkTestUtils.class.getResource("/").getPath() + "../../../..").getCanonicalPath();
     }
 
-    String getStoreLocation () throws IOException {
-        return getRootPath() + "/integration/flink/target/store";
+    String getStoreLocation() throws IOException {
+        return getRootPath() + "/integration/flink/target/store-input";
     }
 
     public CarbonContext createCarbonContext() throws IOException {
         SparkContext sc = new SparkContext(new SparkConf()
-        .setAppName("FLINK_TEST_EXAMPLE")
-        .setMaster("local[2]"));
-    sc.setLogLevel("ERROR");
+                .setAppName("FLINK_TEST_EXAMPLE")
+                .set("spark.driver.allowMultipleContexts", "true")
+                .setMaster("local[2]"));
+        sc.setLogLevel("ERROR");
 
-    CarbonContext cc = new CarbonContext(sc, getStoreLocation(), getRootPath() + "/integration/flink/target/carbonmetastore");
+        CarbonContext cc = new CarbonContext(sc, getStoreLocation(), getRootPath() + "/integration/flink/target/carbonmetastore");
 
-    CarbonProperties.getInstance().addProperty("carbon.storelocation", getStoreLocation());
-    return cc;
+        CarbonProperties.getInstance().addProperty("carbon.storelocation", getStoreLocation());
+        return cc;
     }
 
     public void createStore(CarbonContext carbonContext, String createTableCommand, String loadTableCommand) throws IOException {
-        carbonContext.sql (createTableCommand);
+        CarbonProperties.getInstance()
+                .addProperty(CarbonCommonConstants.CARBON_DATE_FORMAT, "yyyy/MM/dd");
+        carbonContext.sql(createTableCommand);
         carbonContext.sql(loadTableCommand);
     }
 

@@ -332,10 +332,6 @@ public class CarbondataStoreCreator {
         }
     }
 
-    private void addDecimalScaleAndPrecision(CarbonColumn dimensionValue, String dataType) {
-
-    }
-
     private void writeDictionary(String factFilePath, CarbonTable table, AbsoluteTableIdentifier absoluteTableIdentifier, String[] dimensionColumns) throws Exception {
         BufferedReader reader = new BufferedReader(new FileReader(factFilePath));
         List<CarbonColumn> allCols = new ArrayList<CarbonColumn>();
@@ -380,9 +376,7 @@ public class CarbondataStoreCreator {
                 0, new File(loadModel.getFactFilePath()).length(), new String[]{"localhost"});
         Configuration configuration = new Configuration();
         CSVInputFormat format = getCsvInputFormat(configuration, loadModel);
-
         TaskAttemptContextImpl hadoopAttemptContext = new TaskAttemptContextImpl(configuration, new TaskAttemptID("", 1, TaskType.MAP, 0, 0));
-
         RecordReader<NullWritable, StringArrayWritable> recordReader = format.createRecordReader(blockDetails, hadoopAttemptContext);
 
         CSVRecordReaderIterator readerIterator = new CSVRecordReaderIterator(recordReader, blockDetails, hadoopAttemptContext);

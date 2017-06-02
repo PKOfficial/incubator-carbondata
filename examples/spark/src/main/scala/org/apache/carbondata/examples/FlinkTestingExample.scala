@@ -26,6 +26,11 @@ object FlinkTestingExample {
 
     cc.sql(
       s"""
+              LOAD DATA LOCAL INPATH '$testData' into table flinkTable
+           """)
+
+    cc.sql(
+      s"""
          select * from flinkTable
        """).show()
   }

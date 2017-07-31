@@ -35,4 +35,26 @@ class SparkCommandSuite extends Spark2QueryTest with BeforeAndAfterAll {
     sql("CREATE TABLE src_pqt(key INT, value STRING) STORED AS PARQUET")
     sql("CREATE TABLE src_orc(key INT, value STRING) STORED AS ORC")
   }
+
+  test("Testing create table having invalid rowkey shouold throw an exception"){
+    intercept[Exception] {
+      sql(
+        """
+          |CREATE TABLE IF NOT EXISTS t1
+          |(
+          |vin String,
+          |phonenumber Long,
+          |country String,
+          |area String
+          |)
+          |PARTITIONED BY (logdate Timestamp)
+          |STORED BY 'carbondata'
+          |TBLPROPERTIES('PARTITION_TYPE'='RANGE',
+          |'RANGE_INFO'='2014/01/01, 2015/01/01, 2016/01/01','ROWKEY'='logdate')
+        """.stripMargin)
+    }
+  }
+
+
 }
+

@@ -16,26 +16,25 @@
  */
 package org.apache.spark.sql.parser
 
-import scala.collection.mutable
-
-import org.apache.spark.sql.{CarbonEnv, SparkSession}
-import org.apache.spark.sql.catalyst.parser.{AbstractSqlParser, ParseException, SqlBaseParser}
-import org.apache.spark.sql.catalyst.parser.ParserUtils._
-import org.apache.spark.sql.catalyst.parser.SqlBaseParser.{CreateTableContext, TablePropertyListContext}
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.execution.SparkSqlAstBuilder
-import org.apache.spark.sql.execution.command.{BucketFields, CreateTable, Field, PartitionerField, TableModel}
-import org.apache.spark.sql.internal.{SQLConf, VariableSubstitution}
-
-import org.apache.carbondata.core.util.{CarbonSessionInfo, SessionParams, ThreadLocalSessionInfo}
+import org.apache.carbondata.core.util.{CarbonSessionInfo, ThreadLocalSessionInfo}
 import org.apache.carbondata.spark.CarbonOption
 import org.apache.carbondata.spark.exception.MalformedCarbonCommandException
 import org.apache.carbondata.spark.util.CommonUtil
+import org.apache.spark.sql.catalyst.parser.ParserUtils._
+import org.apache.spark.sql.catalyst.parser.SqlBaseParser.{CreateTableContext, TablePropertyListContext}
+import org.apache.spark.sql.catalyst.parser.{AbstractSqlParser, ParseException, SqlBaseParser}
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.execution.SparkSqlAstBuilder
+import org.apache.spark.sql.execution.command.{CreateTable, PartitionerField, TableModel}
+import org.apache.spark.sql.internal.{SQLConf, VariableSubstitution}
+import org.apache.spark.sql.{CarbonEnv, SparkSession}
+
+import scala.collection.mutable
 
 /**
- * Concrete parser for Spark SQL stateENABLE_INMEMORY_MERGE_SORT_DEFAULTments and carbon specific
- * statements
- */
+  * Concrete parser for Spark SQL stateENABLE_INMEMORY_MERGE_SORT_DEFAULTments and carbon specific
+  * statements
+  */
 class CarbonSparkSqlParser(conf: SQLConf, sparkSession: SparkSession) extends AbstractSqlParser {
 
   val astBuilder = new CarbonSqlAstBuilder(conf)
@@ -59,7 +58,7 @@ class CarbonSparkSqlParser(conf: SQLConf, sparkSession: SparkSession) extends Ab
           case e =>
             sys
               .error("\n" + "BaseSqlParser>>>> " + ex.getMessage + "\n" + "CarbonSqlParser>>>> " +
-                     e.getMessage)
+                e.getMessage)
         }
     }
   }
@@ -85,13 +84,13 @@ class CarbonSqlAstBuilder(conf: SQLConf) extends SparkSqlAstBuilder(conf) {
       case _ => ""
     }
     if (fileStorage.equalsIgnoreCase("'carbondata'") ||
-        fileStorage.equalsIgnoreCase("'org.apache.carbondata.format'")) {
+      fileStorage.equalsIgnoreCase("'org.apache.carbondata.format'")) {
       val (name, temp, ifNotExists, external) = visitCreateTableHeader(ctx.createTableHeader)
       // TODO: implement temporary tables
       if (temp) {
         throw new ParseException(
           "CREATE TEMPORARY TABLE is not supported yet. " +
-          "Please use CREATE TEMPORARY VIEW as an alternative.", ctx)
+            "Please use CREATE TEMPORARY VIEW as an alternative.", ctx)
       }
       if (ctx.skewSpec != null) {
         operationNotAllowed("CREATE TABLE ... SKEWED BY", ctx)
@@ -114,11 +113,21 @@ class CarbonSqlAstBuilder(conf: SQLConf) extends SparkSqlAstBuilder(conf) {
           case (x, ys) if ys.length > 1 => "\"" + x + "\""
         }
         operationNotAllowed(s"Duplicated column names found in table definition of $name: " +
-                            duplicateColumns.mkString("[", ",", "]"), ctx)
+          duplicateColumns.mkString("[", ",", "]"), ctx)
       }
 
+      //validating rowkey column
       val tableProperties = mutable.Map[String, String]()
-      properties.foreach{property => tableProperties.put(property._1, property._2)}
+      properties.foreach { property => tableProperties.put(property._1, property._2) }
+      Console.println("table properties :::" + tableProperties.foreach(x => println("key: " + x._1 + " value: " + x._2)))
+      val rowKeyColumn: Option[String] = tableProperties.get("rowkey")
+      val partitionColumn = partitionerFields.map(_.partitionColumn)
+      if (rowKeyColumn.isDefined) {
+        if (!colNames.contains(rowKeyColumn.get)) {
+          throw new Exception("Row key column not found OR Partition key cannot be a rowkey column!!")
+        }
+      }
+
 
       // validate partition clause
       if (partitionerFields.nonEmpty) {
@@ -129,7 +138,7 @@ class CarbonSqlAstBuilder(conf: SQLConf) extends SparkSqlAstBuilder(conf) {
         val badPartCols = partitionerFields.map(_.partitionColumn).toSet.intersect(colNames.toSet)
         if (badPartCols.nonEmpty) {
           operationNotAllowed(s"Partition columns should not be specified in the schema: " +
-                              badPartCols.map("\"" + _ + "\"").mkString("[", ",", "]"), ctx)
+            badPartCols.map("\"" + _ + "\"").mkString("[", ",", "]"), ctx)
         }
       }
       val fields = parser.getFields(cols ++ partitionByStructFields)
@@ -153,11 +162,11 @@ class CarbonSqlAstBuilder(conf: SQLConf) extends SparkSqlAstBuilder(conf) {
   }
 
   /**
-   * This method will convert the database name to lower case
-   *
-   * @param dbName
-   * @return Option of String
-   */
+    * This method will convert the database name to lower case
+    *
+    * @param dbName
+    * @return Option of String
+    */
   protected def convertDbNameToLowerCase(dbName: Option[String]): Option[String] = {
     dbName match {
       case Some(databaseName) => Some(databaseName.toLowerCase)
@@ -166,8 +175,8 @@ class CarbonSqlAstBuilder(conf: SQLConf) extends SparkSqlAstBuilder(conf) {
   }
 
   /**
-   * Parse a key-value map from a [[TablePropertyListContext]], assuming all values are specified.
-   */
+    * Parse a key-value map from a [[TablePropertyListContext]], assuming all values are specified.
+    */
   private def visitPropertyKeyValues(ctx: TablePropertyListContext): Map[String, String] = {
     val props = visitTablePropertyList(ctx)
     val badKeys = props.filter { case (_, v) => v == null }.keys

@@ -495,6 +495,7 @@ case class LoadTableByInsert(relation: CarbonDatasourceHadoopRelation,
   override def processData(sparkSession: SparkSession): Seq[Row] = {
     val df = Dataset.ofRows(sparkSession, child)
     val header = relation.tableSchema.get.fields.map(_.name).mkString(",")
+    if(header != df.columns.mkString(",")) throw new Exception("Column schema not matched")
     val load = LoadTable(
       Some(relation.carbonRelation.databaseName),
       relation.carbonRelation.tableName,
